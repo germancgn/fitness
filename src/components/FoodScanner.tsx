@@ -23,43 +23,27 @@ export default function FoodScanner() {
   const [scanning, setScanning] = useState(false);
   const [food, setFood] = useState<FoodInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
   const animFrameRef = useRef<number | null>(null);
-
-  function log(msg: string) {
-    console.log(msg);
-    setLogs((prev) => [...prev, `${new Date().toISOString().slice(11, 23)} ${msg}`]);
-  }
+  const stoppedRef = useRef(false);
 
   useEffect(() => {
-    setLogs([`Component mounted`, `UA: ${navigator.userAgent}`]);
-
-    const onError = (e: ErrorEvent) => setLogs((p) => [...p, `JS ERROR: ${e.message} @ ${e.filename}:${e.lineno}`]);
-    const onReject = (e: PromiseRejectionEvent) => setLogs((p) => [...p, `UNHANDLED REJECTION: ${String(e.reason)}`]);
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onReject);
-
     return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onReject);
+      stoppedRef.current = true;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       const video = videoRef.current;
       if (video?.srcObject) {
-        (video.srcObject as MediaStream).getTracks().forEach((t) => {
-          t.stop();
-        });
+        (video.srcObject as MediaStream).getTracks().forEach((t) => { t.stop(); });
         video.srcObject = null;
       }
     };
   }, []);
 
   function stopCamera() {
+    stoppedRef.current = true;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     const video = videoRef.current;
     if (video?.srcObject) {
-      (video.srcObject as MediaStream).getTracks().forEach((t) => {
-        t.stop();
-      });
+      (video.srcObject as MediaStream).getTracks().forEach((t) => { t.stop(); });
       video.srcObject = null;
     }
   }
@@ -67,86 +51,91 @@ export default function FoodScanner() {
   async function startScanning() {
     setError(null);
     setFood(null);
-    setLogs([]);
+    stoppedRef.current = false;
 
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Camera requires a secure connection (HTTPS).");
+      return;
+    }
+
+    setScanning(true);
     try {
-      log(`BarcodeDetector available: ${"BarcodeDetector" in globalThis}`);
+      const barcode = "BarcodeDetector" in globalThis
+        ? await scanNative()
+        : await scanZXing();
 
-      if (!("BarcodeDetector" in globalThis)) {
-        setError("Barcode scanning is not supported in this browser. Use Chrome or Safari 17+.");
-        return;
+      if (barcode) {
+        setScanning(false);
+        await lookupFood(barcode);
       }
-
-      log(`mediaDevices available: ${!!navigator.mediaDevices?.getUserMedia}`);
-
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setError("Camera requires a secure connection (HTTPS). Please access this page over HTTPS.");
-        return;
-      }
-
-      log("Requesting camera…");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      log("Camera stream acquired");
-
-      const video = videoRef.current;
-      if (!video) { stream.getTracks().forEach((t) => { t.stop(); }); return; }
-      video.srcObject = stream;
-      await video.play();
-      setScanning(true);
-      log("Video playing");
-
-      const supported = await BarcodeDetector.getSupportedFormats();
-      log(`Supported formats: ${supported.join(", ")}`);
-      const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"];
-      const formats = wanted.filter((f) => supported.includes(f));
-      log(`Using formats: ${formats.join(", ") || "all"}`);
-      const detector = new BarcodeDetector(formats.length > 0 ? { formats } : undefined);
-
-      async function scan() {
-        if (!video) return;
-        const barcodes = await detector.detect(video);
-        if (barcodes.length > 0) {
-          const barcode = barcodes[0].rawValue;
-          log(`Detected barcode: ${barcode}`);
-          stopCamera();
-          setScanning(false);
-          await lookupFood(barcode);
-        } else {
-          animFrameRef.current = requestAnimationFrame(scan);
-        }
-      }
-
-      animFrameRef.current = requestAnimationFrame(scan);
     } catch (e) {
+      if (stoppedRef.current) return;
       const msg = e instanceof Error ? e.message : String(e);
-      log(`ERROR: ${msg}`);
-      if (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
-        setError("Camera access denied. Please allow camera permissions and try again.");
+      setScanning(false);
+      if (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("notallowed")) {
+        setError("Camera access denied. Please allow camera permissions.");
       } else {
         setError(`Scanner error: ${msg}`);
       }
     }
   }
 
+  async function scanNative(): Promise<string | null> {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    const video = videoRef.current;
+    if (!video) { stream.getTracks().forEach((t) => { t.stop(); }); return null; }
+    video.srcObject = stream;
+    await video.play();
+
+    const supported = await BarcodeDetector.getSupportedFormats();
+    const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"];
+    const formats = wanted.filter((f) => supported.includes(f));
+    const detector = new BarcodeDetector(formats.length > 0 ? { formats } : undefined);
+
+    return new Promise((resolve, reject) => {
+      async function scan() {
+        if (stoppedRef.current || !video) { resolve(null); return; }
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            stopCamera();
+            resolve(barcodes[0].rawValue);
+          } else {
+            animFrameRef.current = requestAnimationFrame(scan);
+          }
+        } catch (e) { reject(e); }
+      }
+      animFrameRef.current = requestAnimationFrame(scan);
+    });
+  }
+
+  async function scanZXing(): Promise<string | null> {
+    const { BrowserMultiFormatReader } = await import("@zxing/browser");
+    const reader = new BrowserMultiFormatReader();
+
+    const video = videoRef.current;
+    if (!video) return null;
+
+    try {
+      const result = await reader.decodeOnceFromConstraints(
+        { video: { facingMode: "environment" } },
+        video,
+      );
+      stopCamera();
+      return result.getText();
+    } catch (e) {
+      if (stoppedRef.current) return null;
+      throw e;
+    }
+  }
+
   async function lookupFood(barcode: string) {
     try {
-      const res = await fetch(
-        `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
-      );
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
       const data = await res.json();
-
-      if (data.status !== 1) {
-        setError(`No food found for barcode ${barcode}.`);
-        return;
-      }
-
+      if (data.status !== 1) { setError(`No food found for barcode ${barcode}.`); return; }
       const p = data.product;
-      const n = (p.nutriments ?? {}) as Record<
-        string,
-        string | number | undefined
-      >;
+      const n = (p.nutriments ?? {}) as Record<string, string | number | undefined>;
       setFood({
         name: p.product_name || "Unknown product",
         calories: String(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? "N/A"),
@@ -165,7 +154,6 @@ export default function FoodScanner() {
     setScanning(false);
     setFood(null);
     setError(null);
-    setLogs([]);
   }
 
   return (
@@ -196,21 +184,9 @@ export default function FoodScanner() {
       {error && (
         <div className="text-red-600 text-sm text-center">
           {error}
-          <button
-            type="button"
-            onClick={reset}
-            className="block mt-2 underline"
-          >
+          <button type="button" onClick={reset} className="block mt-2 underline">
             Try again
           </button>
-        </div>
-      )}
-
-      {logs.length > 0 && (
-        <div className="w-full rounded-lg bg-black text-green-400 font-mono text-xs p-3 space-y-0.5 max-h-48 overflow-y-auto">
-          {logs.map((line) => (
-            <div key={line}>{line}</div>
-          ))}
         </div>
       )}
 
@@ -218,12 +194,7 @@ export default function FoodScanner() {
         <div className="w-full rounded-xl border p-4 flex flex-col gap-3">
           {food.image && (
             <div className="relative w-full h-40">
-              <Image
-                src={food.image}
-                alt={food.name}
-                fill
-                className="object-contain rounded-lg"
-              />
+              <Image src={food.image} alt={food.name} fill className="object-contain rounded-lg" />
             </div>
           )}
           <h2 className="font-semibold text-lg">{food.name}</h2>
