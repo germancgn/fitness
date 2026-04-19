@@ -1,13 +1,8 @@
 "use client";
 
+import { BarcodeDetector, type BarcodeFormat } from "barcode-detector/ponyfill";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-
-declare class BarcodeDetector {
-  constructor(options?: { formats?: string[] });
-  detect(image: HTMLVideoElement): Promise<Array<{ rawValue: string }>>;
-  static getSupportedFormats(): Promise<string[]>;
-}
 
 type FoodInfo = {
   name: string;
@@ -32,7 +27,9 @@ export default function FoodScanner() {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       const video = videoRef.current;
       if (video?.srcObject) {
-        (video.srcObject as MediaStream).getTracks().forEach((t) => { t.stop(); });
+        (video.srcObject as MediaStream).getTracks().forEach((t) => {
+          t.stop();
+        });
         video.srcObject = null;
       }
     };
@@ -43,9 +40,16 @@ export default function FoodScanner() {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     const video = videoRef.current;
     if (video?.srcObject) {
-      (video.srcObject as MediaStream).getTracks().forEach((t) => { t.stop(); });
+      (video.srcObject as MediaStream).getTracks().forEach((t) => {
+        t.stop();
+      });
       video.srcObject = null;
     }
+  }
+
+  async function stopScanning() {
+    stopCamera();
+    setScanning(false);
   }
 
   async function startScanning() {
@@ -60,9 +64,7 @@ export default function FoodScanner() {
 
     setScanning(true);
     try {
-      const barcode = "BarcodeDetector" in globalThis
-        ? await scanNative()
-        : await scanZXing();
+      const barcode = await scan();
 
       if (barcode) {
         setScanning(false);
@@ -72,7 +74,10 @@ export default function FoodScanner() {
       if (stoppedRef.current) return;
       const msg = e instanceof Error ? e.message : String(e);
       setScanning(false);
-      if (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("notallowed")) {
+      if (
+        msg.toLowerCase().includes("denied") ||
+        msg.toLowerCase().includes("notallowed")
+      ) {
         setError("Camera access denied. Please allow camera permissions.");
       } else {
         setError(`Scanner error: ${msg}`);
@@ -80,21 +85,33 @@ export default function FoodScanner() {
     }
   }
 
-  async function scanNative(): Promise<string | null> {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  async function scan(): Promise<string | null> {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+    });
     const video = videoRef.current;
-    if (!video) { stream.getTracks().forEach((t) => { t.stop(); }); return null; }
+    if (!video) {
+      stream.getTracks().forEach((t) => {
+        t.stop();
+      });
+      return null;
+    }
     video.srcObject = stream;
     await video.play();
 
     const supported = await BarcodeDetector.getSupportedFormats();
-    const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"];
+    const wanted: BarcodeFormat[] = ["ean_13", "ean_8", "upc_a", "upc_e"];
     const formats = wanted.filter((f) => supported.includes(f));
-    const detector = new BarcodeDetector(formats.length > 0 ? { formats } : undefined);
+    const detector = new BarcodeDetector(
+      formats.length > 0 ? { formats } : undefined,
+    );
 
     return new Promise((resolve, reject) => {
       async function scan() {
-        if (stoppedRef.current || !video) { resolve(null); return; }
+        if (stoppedRef.current || !video) {
+          resolve(null);
+          return;
+        }
         try {
           const barcodes = await detector.detect(video);
           if (barcodes.length > 0) {
@@ -103,39 +120,29 @@ export default function FoodScanner() {
           } else {
             animFrameRef.current = requestAnimationFrame(scan);
           }
-        } catch (e) { reject(e); }
+        } catch (e) {
+          reject(e);
+        }
       }
       animFrameRef.current = requestAnimationFrame(scan);
     });
   }
 
-  async function scanZXing(): Promise<string | null> {
-    const { BrowserMultiFormatReader } = await import("@zxing/browser");
-    const reader = new BrowserMultiFormatReader();
-
-    const video = videoRef.current;
-    if (!video) return null;
-
-    try {
-      const result = await reader.decodeOnceFromConstraints(
-        { video: { facingMode: "environment" } },
-        video,
-      );
-      stopCamera();
-      return result.getText();
-    } catch (e) {
-      if (stoppedRef.current) return null;
-      throw e;
-    }
-  }
-
   async function lookupFood(barcode: string) {
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+      const res = await fetch(
+        `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
+      );
       const data = await res.json();
-      if (data.status !== 1) { setError(`No food found for barcode ${barcode}.`); return; }
+      if (data.status !== 1) {
+        setError(`No food found for barcode ${barcode}.`);
+        return;
+      }
       const p = data.product;
-      const n = (p.nutriments ?? {}) as Record<string, string | number | undefined>;
+      const n = (p.nutriments ?? {}) as Record<
+        string,
+        string | number | undefined
+      >;
       setFood({
         name: p.product_name || "Unknown product",
         calories: String(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? "N/A"),
@@ -157,7 +164,7 @@ export default function FoodScanner() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 p-6 w-full max-w-sm">
+    <div className="flex flex-col items-center gap-4 p-6 w-full max-w-lg">
       <h1 className="text-2xl font-bold">Food Scanner</h1>
 
       <video
@@ -178,13 +185,27 @@ export default function FoodScanner() {
       )}
 
       {scanning && (
+        <button
+          onClick={stopScanning}
+          className="px-6 py-3 bg-red-400 text-white rounded-xl font-semibold hover:bg-red-500"
+          type="button"
+        >
+          Stop Scanning
+        </button>
+      )}
+
+      {scanning && (
         <p className="text-sm text-gray-500">Point camera at a food barcode…</p>
       )}
 
       {error && (
         <div className="text-red-600 text-sm text-center">
           {error}
-          <button type="button" onClick={reset} className="block mt-2 underline">
+          <button
+            type="button"
+            onClick={reset}
+            className="block mt-2 underline"
+          >
             Try again
           </button>
         </div>
@@ -194,7 +215,12 @@ export default function FoodScanner() {
         <div className="w-full rounded-xl border p-4 flex flex-col gap-3">
           {food.image && (
             <div className="relative w-full h-40">
-              <Image src={food.image} alt={food.name} fill className="object-contain rounded-lg" />
+              <Image
+                src={food.image}
+                alt={food.name}
+                fill
+                className="object-contain rounded-lg"
+              />
             </div>
           )}
           <h2 className="font-semibold text-lg">{food.name}</h2>
