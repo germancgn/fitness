@@ -79,6 +79,7 @@ export async function signOut() {
 }
 
 async function getOrigin() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
   const headersList = await headers();
   const host = headersList.get("host") ?? "localhost:3000";
   const protocol = host.startsWith("localhost") ? "http" : "https";
