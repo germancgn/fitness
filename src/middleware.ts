@@ -12,6 +12,7 @@ const publicPaths = [
   "/confirm",
   "/auth-code-error",
   "/auth",
+  "/onboarding",
 ];
 
 export async function middleware(request: NextRequest) {

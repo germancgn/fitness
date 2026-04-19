@@ -90,8 +90,27 @@ export const foodLogs = pgTable("food_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const mealTemplates = pgTable("meal_templates", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const mealTemplateItems = pgTable("meal_template_items", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  mealTemplateId: integer("meal_template_id")
+    .notNull()
+    .references(() => mealTemplates.id, { onDelete: "cascade" }),
+  foodItemId: integer("food_item_id")
+    .notNull()
+    .references(() => foodItems.id),
+  quantity: numeric("quantity", { precision: 6, scale: 2 }).notNull(),
+});
+
 export const foodItemsRelations = relations(foodItems, ({ many }) => ({
   logs: many(foodLogs),
+  templateItems: many(mealTemplateItems),
 }));
 
 export const foodLogsRelations = relations(foodLogs, ({ one }) => ({
@@ -100,3 +119,21 @@ export const foodLogsRelations = relations(foodLogs, ({ one }) => ({
     references: [foodItems.id],
   }),
 }));
+
+export const mealTemplatesRelations = relations(mealTemplates, ({ many }) => ({
+  items: many(mealTemplateItems),
+}));
+
+export const mealTemplateItemsRelations = relations(
+  mealTemplateItems,
+  ({ one }) => ({
+    template: one(mealTemplates, {
+      fields: [mealTemplateItems.mealTemplateId],
+      references: [mealTemplates.id],
+    }),
+    foodItem: one(foodItems, {
+      fields: [mealTemplateItems.foodItemId],
+      references: [foodItems.id],
+    }),
+  }),
+);

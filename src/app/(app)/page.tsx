@@ -1,0 +1,242 @@
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { signOut } from "@/app/actions/auth";
+import type { FoodItem } from "@/app/actions/food";
+import MealsList from "@/components/MealsList";
+import NutritionControls from "@/components/NutritionControls";
+import { db } from "@/db";
+import { foodItems, foodLogs, userProfiles } from "@/db/schema";
+import { createClient } from "@/utils/supabase/server";
+
+const MEAL_LABELS: Record<string, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snacks",
+};
+
+async function getPageData(userId: string) {
+  const today = new Date().toISOString().split("T")[0];
+
+  const [profile, logs, recentRows] = await Promise.all([
+    db.query.userProfiles.findFirst({ where: eq(userProfiles.userId, userId) }),
+    db
+      .select()
+      .from(foodLogs)
+      .innerJoin(foodItems, eq(foodLogs.foodItemId, foodItems.id))
+      .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, today)))
+      .orderBy(foodLogs.createdAt),
+    db
+      .select({
+        foodItemId: foodLogs.foodItemId,
+        lastLogged: sql<string>`max(${foodLogs.createdAt})`,
+      })
+      .from(foodLogs)
+      .where(eq(foodLogs.userId, userId))
+      .groupBy(foodLogs.foodItemId)
+      .orderBy(sql`max(${foodLogs.createdAt}) desc`)
+      .limit(20),
+  ]);
+
+  const recentFoodIds = recentRows.map((r) => r.foodItemId);
+  const recentFoods: FoodItem[] =
+    recentFoodIds.length > 0
+      ? await db
+          .select({
+            id: foodItems.id,
+            name: foodItems.name,
+            calories: foodItems.calories,
+            protein: foodItems.protein,
+            carbs: foodItems.carbs,
+            fat: foodItems.fat,
+            imageFrontUrl: foodItems.imageFrontUrl,
+            servingSize: foodItems.servingSize,
+            servingQuantity: foodItems.servingQuantity,
+          })
+          .from(foodItems)
+          .where(inArray(foodItems.id, recentFoodIds))
+      : [];
+
+  const totals = logs.reduce(
+    (acc, { food_logs: log, food_items: item }) => {
+      const qty = Number(log.quantity) / 100;
+      return {
+        calories: acc.calories + (Number(item.calories) || 0) * qty,
+        protein: acc.protein + (Number(item.protein) || 0) * qty,
+        carbs: acc.carbs + (Number(item.carbs) || 0) * qty,
+        fat: acc.fat + (Number(item.fat) || 0) * qty,
+      };
+    },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
+
+  const meals = logs.reduce<
+    Record<
+      string,
+      Array<{
+        id: number;
+        name: string;
+        quantity: number;
+        calories: number;
+        caloriesPer100g: string | null;
+        protein: string | null;
+        carbs: string | null;
+        fat: string | null;
+        servingSize: string | null;
+        servingQuantity: string | null;
+        imageFrontUrl: string | null;
+      }>
+    >
+  >((acc, { food_logs: log, food_items: item }) => {
+    const type = log.mealType ?? "snack";
+    if (!acc[type]) acc[type] = [];
+    const qty = Number(log.quantity) / 100;
+    acc[type].push({
+      id: log.id,
+      name: item.name,
+      quantity: Number(log.quantity),
+      calories: Math.round((Number(item.calories) || 0) * qty),
+      caloriesPer100g: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      servingSize: item.servingSize,
+      servingQuantity: item.servingQuantity,
+      imageFrontUrl: item.imageFrontUrl,
+    });
+    return acc;
+  }, {});
+
+  return {
+    totals: {
+      calories: Math.round(totals.calories),
+      protein: Math.round(totals.protein),
+      carbs: Math.round(totals.carbs),
+      fat: Math.round(totals.fat),
+    },
+    targets: {
+      calories: profile?.calorieTarget ?? 2000,
+      protein: profile?.proteinTarget ?? 150,
+      carbs: profile?.carbsTarget ?? 200,
+      fat: profile?.fatTarget ?? 65,
+    },
+    meals,
+    recentFoods,
+  };
+}
+
+export default async function Home() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { totals, targets, meals, recentFoods } = await getPageData(user.id);
+  const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
+
+  return (
+    <div className="flex flex-col bg-black font-sans min-h-screen">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
+        <span className="text-white font-semibold">FitnessLabs</span>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="text-sm text-zinc-500 hover:text-white transition-colors"
+          >
+            Sign out
+          </button>
+        </form>
+      </header>
+
+      <main className="flex flex-col gap-6 p-6 max-w-lg mx-auto w-full pb-8">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs text-zinc-500 uppercase tracking-wide">Today</p>
+          <div className="flex items-end gap-2">
+            <span className="text-5xl font-bold text-white">
+              {totals.calories}
+            </span>
+            <span className="text-zinc-500 text-sm mb-2">
+              / {targets.calories} kcal
+            </span>
+          </div>
+          <div className="h-2 bg-zinc-900 rounded-full overflow-hidden mt-1">
+            <div
+              className="h-full bg-white rounded-full transition-all"
+              style={{
+                width: `${Math.min((totals.calories / targets.calories) * 100, 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <MacroCard
+            label="Protein"
+            consumed={totals.protein}
+            target={targets.protein}
+            unit="g"
+            color="bg-blue-500"
+          />
+          <MacroCard
+            label="Carbs"
+            consumed={totals.carbs}
+            target={targets.carbs}
+            unit="g"
+            color="bg-yellow-500"
+          />
+          <MacroCard
+            label="Fat"
+            consumed={totals.fat}
+            target={targets.fat}
+            unit="g"
+            color="bg-orange-500"
+          />
+        </div>
+
+        <NutritionControls recentFoods={recentFoods} />
+
+        <MealsList
+          meals={meals}
+          mealOrder={mealOrder}
+          mealLabels={MEAL_LABELS}
+        />
+      </main>
+    </div>
+  );
+}
+
+function MacroCard({
+  label,
+  consumed,
+  target,
+  unit,
+  color,
+}: {
+  label: string;
+  consumed: number;
+  target: number;
+  unit: string;
+  color: string;
+}) {
+  return (
+    <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-4 flex flex-col gap-3">
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className="text-xl font-semibold text-white">
+        {consumed}
+        <span className="text-xs text-zinc-600 font-normal ml-0.5">{unit}</span>
+      </p>
+      <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all`}
+          style={{ width: `${Math.min((consumed / target) * 100, 100)}%` }}
+        />
+      </div>
+      <p className="text-xs text-zinc-600">
+        of {target}
+        {unit}
+      </p>
+    </div>
+  );
+}
