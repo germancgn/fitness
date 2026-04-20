@@ -43,13 +43,64 @@ export default function MealsList({
         )}
         {mealOrder.map((type) => {
           const items = meals[type];
-          const mealTypeCaloriesMap = meals[type].length;
+
           if (!items?.length) return null;
+
+          const mealCalories = items.reduce(
+            (sum, item) => sum + item.calories,
+            0,
+          );
+
+          const macros = items.reduce(
+            (sum, item) => {
+              const factor = item.quantity / 100;
+              return {
+                protein: sum.protein + (Number(item.protein) || 0) * factor,
+                carbs: sum.carbs + (Number(item.carbs) || 0) * factor,
+                fat: sum.fat + (Number(item.fat) || 0) * factor,
+              };
+            },
+            { protein: 0, carbs: 0, fat: 0 },
+          );
+
+          const macroKcal = {
+            protein: macros.protein * 4,
+            carbs: macros.carbs * 4,
+            fat: macros.fat * 9,
+          };
+          const totalMacroKcal =
+            macroKcal.protein + macroKcal.carbs + macroKcal.fat;
+
           return (
             <div key={type} className="flex flex-col gap-2">
-              <p className="text-xs text-zinc-500 uppercase tracking-wide">
-                {mealLabels[type]} {mealTypeCaloriesMap}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                  {mealLabels[type]}
+                </p>
+                <p className="text-xs text-zinc-500">{mealCalories} kcal</p>
+              </div>
+              {totalMacroKcal > 0 && (
+                <div className="flex gap-px h-1 rounded-full overflow-hidden">
+                  <div
+                    className="bg-blue-500 h-full"
+                    style={{
+                      width: `${(macroKcal.protein / totalMacroKcal) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="bg-yellow-500 h-full"
+                    style={{
+                      width: `${(macroKcal.carbs / totalMacroKcal) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="bg-orange-500 h-full"
+                    style={{
+                      width: `${(macroKcal.fat / totalMacroKcal) * 100}%`,
+                    }}
+                  />
+                </div>
+              )}
               <div className="flex flex-col divide-y divide-zinc-900">
                 {items.map((item) => (
                   <button
