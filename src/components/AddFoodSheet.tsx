@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FoodItem } from "@/app/actions/food";
 import { addFoodLog } from "@/app/actions/food";
+import { useSheet } from "@/hooks/useSheet";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -33,6 +34,7 @@ export default function AddFoodSheet({
   >("lunch");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { close, panelClass, backdropClass } = useSheet(onClose);
 
   const gramsValue =
     mode === "servings"
@@ -51,24 +53,26 @@ export default function AddFoodSheet({
     await addFoodLog(formData);
     setLoading(false);
     router.refresh();
-    onClose();
+    close();
   }
 
   return (
     <>
       <button
         type="button"
-        className="fixed inset-0 bg-black/60 z-40"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/60 z-40 ${backdropClass}`}
+        onClick={() => close()}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl p-6 flex flex-col gap-5 max-w-lg mx-auto">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl p-6 flex flex-col gap-5 max-w-lg mx-auto ${panelClass}`}
+      >
         <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto -mt-2" />
 
         <div className="flex items-center justify-between">
           <p className="text-white font-medium">Add food</p>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => close()}
             className="text-zinc-500 hover:text-white transition-colors text-sm"
           >
             Cancel

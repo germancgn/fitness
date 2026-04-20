@@ -43,11 +43,12 @@ export default function MealsList({
         )}
         {mealOrder.map((type) => {
           const items = meals[type];
+          const mealTypeCaloriesMap = meals[type].length;
           if (!items?.length) return null;
           return (
             <div key={type} className="flex flex-col gap-2">
               <p className="text-xs text-zinc-500 uppercase tracking-wide">
-                {mealLabels[type]}
+                {mealLabels[type]} {mealTypeCaloriesMap}
               </p>
               <div className="flex flex-col divide-y divide-zinc-900">
                 {items.map((item) => (

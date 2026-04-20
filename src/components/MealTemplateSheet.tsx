@@ -13,6 +13,7 @@ import {
   updateItemInTemplate,
 } from "@/app/actions/meals";
 import FoodScanner from "@/components/FoodScanner";
+import { useSheet } from "@/hooks/useSheet";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -61,13 +62,14 @@ export default function MealTemplateSheet({
   const [editingItem, setEditingItem] = useState<TemplateItem | null>(null);
   const [editGrams, setEditGrams] = useState("");
   const router = useRouter();
+  const { close, panelClass, backdropClass } = useSheet(onClose);
 
   async function handleLog() {
     setLoading(true);
     await logMealTemplate(template.id, mealType);
     setLoading(false);
     router.refresh();
-    onClose();
+    close();
   }
 
   async function handleDelete() {
@@ -75,7 +77,7 @@ export default function MealTemplateSheet({
     await deleteMealTemplate(template.id);
     setLoading(false);
     router.refresh();
-    onDeleted();
+    close(onDeleted);
   }
 
   async function handleRemoveItem(item: TemplateItem) {
@@ -150,10 +152,12 @@ export default function MealTemplateSheet({
       <button
         type="button"
         aria-label="Close"
-        className="fixed inset-0 bg-black/60 z-50 w-full cursor-default"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/60 z-50 w-full cursor-default ${backdropClass}`}
+        onClick={() => close()}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-60 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh]">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-60 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh] ${panelClass}`}
+      >
         <div className="px-6 pt-5 pb-4 shrink-0 flex items-center justify-between border-b border-zinc-900">
           <div>
             <p className="text-white font-medium">{template.name}</p>
@@ -163,7 +167,7 @@ export default function MealTemplateSheet({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => close()}
             className="text-zinc-500 hover:text-white transition-colors text-sm"
           >
             Close

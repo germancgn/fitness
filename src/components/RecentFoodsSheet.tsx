@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import type { FoodItem, SearchResult } from "@/app/actions/food";
 import { createCustomFood, lookupFood, searchFood } from "@/app/actions/food";
 import MealsTab from "@/components/MealsTab";
+import { useSheet } from "@/hooks/useSheet";
 
 type Tab = "recent" | "custom" | "meals";
 
@@ -25,6 +26,7 @@ export default function RecentFoodsSheet({
   );
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { close, panelClass, backdropClass } = useSheet(onClose);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -60,17 +62,19 @@ export default function RecentFoodsSheet({
       <button
         type="button"
         aria-label="Close"
-        className="fixed inset-0 bg-black/60 z-40 w-full cursor-default"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/60 z-40 w-full cursor-default ${backdropClass}`}
+        onClick={() => close()}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh]">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh] ${panelClass}`}
+      >
         <div className="px-6 pt-5 pb-0 shrink-0 flex flex-col gap-4">
           <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto" />
           <div className="flex items-center justify-between">
             <p className="text-white font-medium">Add food</p>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => close()}
               className="text-zinc-500 hover:text-white transition-colors text-sm"
             >
               Close

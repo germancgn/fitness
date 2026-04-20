@@ -4,6 +4,7 @@ import { BarcodeDetector, type BarcodeFormat } from "barcode-detector/ponyfill";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FoodItem } from "@/app/actions/food";
 import { lookupFood } from "@/app/actions/food";
+import { useSheet } from "@/hooks/useSheet";
 
 export default function FoodScanner({
   onFood,
@@ -117,6 +118,13 @@ export default function FoodScanner({
     }
   }, [scan, onFood]);
 
+  const { close, panelClass, backdropClass } = useSheet(onClose);
+
+  function handleClose() {
+    stopCamera();
+    close();
+  }
+
   useEffect(() => {
     startScanning();
     return () => stopCamera();
@@ -127,21 +135,17 @@ export default function FoodScanner({
       <button
         type="button"
         aria-label="Close"
-        className="fixed inset-0 bg-black/60 z-40 w-full cursor-default"
-        onClick={() => {
-          stopCamera();
-          onClose();
-        }}
+        className={`fixed inset-0 bg-black/60 z-40 w-full cursor-default ${backdropClass}`}
+        onClick={handleClose}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto overflow-hidden">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto overflow-hidden ${panelClass}`}
+      >
         <div className="px-6 pt-5 pb-4 flex items-center justify-between">
           <p className="text-white font-medium">Scan barcode</p>
           <button
             type="button"
-            onClick={() => {
-              stopCamera();
-              onClose();
-            }}
+            onClick={handleClose}
             className="text-zinc-500 hover:text-white transition-colors text-sm"
           >
             Cancel
