@@ -1,7 +1,6 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
-import type { FoodItem } from "@/app/actions/food";
 import DayNav from "@/components/DayNav";
 import MealsList from "@/components/MealsList";
 import NutritionControls from "@/components/NutritionControls";
@@ -17,44 +16,54 @@ const MEAL_LABELS: Record<string, string> = {
 };
 
 async function getPageData(userId: string, date: string) {
-  const [profile, logs, recentRows] = await Promise.all([
+  const foodLogColumns = {
+    id: foodLogs.id,
+    userId: foodLogs.userId,
+    foodItemId: foodLogs.foodItemId,
+    date: foodLogs.date,
+    mealType: foodLogs.mealType,
+    quantity: foodLogs.quantity,
+    createdAt: foodLogs.createdAt,
+  };
+
+  const foodItemColumns = {
+    id: foodItems.id,
+    name: foodItems.name,
+    calories: foodItems.calories,
+    protein: foodItems.protein,
+    carbs: foodItems.carbs,
+    fat: foodItems.fat,
+    imageFrontUrl: foodItems.imageFrontUrl,
+    servingSize: foodItems.servingSize,
+    servingQuantity: foodItems.servingQuantity,
+  };
+
+  const recentSubquery = db
+    .select({
+      foodItemId: foodLogs.foodItemId,
+      lastLogged: sql<string>`max(${foodLogs.createdAt})`.as("last_logged"),
+    })
+    .from(foodLogs)
+    .where(eq(foodLogs.userId, userId))
+    .groupBy(foodLogs.foodItemId)
+    .orderBy(sql`max(${foodLogs.createdAt}) desc`)
+    .limit(20)
+    .as("recent");
+
+  const [profile, logs, recentFoods] = await Promise.all([
     db.query.userProfiles.findFirst({ where: eq(userProfiles.userId, userId) }),
     db
-      .select()
+      .select({ food_logs: foodLogColumns, food_items: foodItemColumns })
       .from(foodLogs)
       .innerJoin(foodItems, eq(foodLogs.foodItemId, foodItems.id))
       .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, date)))
       .orderBy(foodLogs.createdAt),
     db
-      .select({
-        foodItemId: foodLogs.foodItemId,
-        lastLogged: sql<string>`max(${foodLogs.createdAt})`,
-      })
-      .from(foodLogs)
-      .where(eq(foodLogs.userId, userId))
-      .groupBy(foodLogs.foodItemId)
-      .orderBy(sql`max(${foodLogs.createdAt}) desc`)
-      .limit(20),
+      .select(foodItemColumns)
+      .from(foodItems)
+      .innerJoin(recentSubquery, eq(foodItems.id, recentSubquery.foodItemId))
+      .orderBy(sql`${recentSubquery.lastLogged} desc`),
   ]);
-
-  const recentFoodIds = recentRows.map((r) => r.foodItemId);
-  const recentFoods: FoodItem[] =
-    recentFoodIds.length > 0
-      ? await db
-          .select({
-            id: foodItems.id,
-            name: foodItems.name,
-            calories: foodItems.calories,
-            protein: foodItems.protein,
-            carbs: foodItems.carbs,
-            fat: foodItems.fat,
-            imageFrontUrl: foodItems.imageFrontUrl,
-            servingSize: foodItems.servingSize,
-            servingQuantity: foodItems.servingQuantity,
-          })
-          .from(foodItems)
-          .where(inArray(foodItems.id, recentFoodIds))
-      : [];
 
   const totals = logs.reduce(
     (acc, { food_logs: log, food_items: item }) => {

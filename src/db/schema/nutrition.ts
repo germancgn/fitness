@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   date,
+  index,
   integer,
   numeric,
   pgEnum,
@@ -78,17 +79,24 @@ export const foodItems = pgTable("food_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const foodLogs = pgTable("food_logs", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: uuid("user_id").notNull(),
-  foodItemId: integer("food_item_id")
-    .notNull()
-    .references(() => foodItems.id),
-  date: date("date").notNull(),
-  mealType: mealTypeEnum("meal_type").notNull(),
-  quantity: numeric("quantity", { precision: 6, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const foodLogs = pgTable(
+  "food_logs",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: uuid("user_id").notNull(),
+    foodItemId: integer("food_item_id")
+      .notNull()
+      .references(() => foodItems.id),
+    date: date("date").notNull(),
+    mealType: mealTypeEnum("meal_type").notNull(),
+    quantity: numeric("quantity", { precision: 6, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("food_logs_user_date_idx").on(t.userId, t.date),
+    index("food_logs_user_created_idx").on(t.userId, t.createdAt),
+  ],
+);
 
 export const mealTemplates = pgTable("meal_templates", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
