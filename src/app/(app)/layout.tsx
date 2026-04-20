@@ -1,3 +1,4 @@
+import BottomNav from "@/components/BottomNav";
 import { db } from "@/db";
 import { userProfiles } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
@@ -24,5 +25,10 @@ export default async function AppLayout({
 
   if (!profile) redirect("/onboarding");
 
-  return <>{children}</>;
+  return (
+    <div className="pb-16">
+      {children}
+      <BottomNav />
+    </div>
+  );
 }
