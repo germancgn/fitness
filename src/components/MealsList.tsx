@@ -1,7 +1,7 @@
 "use client";
 
-import EditFoodLogSheet from "@/components/EditFoodLogSheet";
 import { useState } from "react";
+import EditFoodLogSheet from "@/components/EditFoodLogSheet";
 
 type LogEntry = {
   id: number;
@@ -28,9 +28,19 @@ export default function MealsList({
 }) {
   const [editing, setEditing] = useState<LogEntry | null>(null);
 
+  const hasAnyEntries = mealOrder.some((type) => meals[type]?.length);
+
   return (
     <>
       <div className="flex flex-col gap-4">
+        {!hasAnyEntries && (
+          <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
+            <p className="text-zinc-300 font-medium">Nothing logged here</p>
+            <p className="text-xs text-zinc-600 max-w-48 leading-relaxed">
+              Add food to start tracking your nutrition for this day
+            </p>
+          </div>
+        )}
         {mealOrder.map((type) => {
           const items = meals[type];
           if (!items?.length) return null;

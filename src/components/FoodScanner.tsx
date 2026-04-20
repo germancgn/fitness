@@ -163,7 +163,7 @@ export default function FoodScanner({
           </div>
         </div>
 
-        <div className="px-6 pb-8 flex flex-col items-center gap-2 min-h-[60px]">
+        <div className="px-6 pb-8 flex flex-col items-center gap-2 min-h-15">
           {scanning && (
             <p className="text-sm text-zinc-400">
               Point camera at a food barcode…

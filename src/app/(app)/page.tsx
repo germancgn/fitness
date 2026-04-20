@@ -2,6 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import type { FoodItem } from "@/app/actions/food";
+import DayNav from "@/components/DayNav";
 import MealsList from "@/components/MealsList";
 import NutritionControls from "@/components/NutritionControls";
 import { db } from "@/db";
@@ -15,16 +16,14 @@ const MEAL_LABELS: Record<string, string> = {
   snack: "Snacks",
 };
 
-async function getPageData(userId: string) {
-  const today = new Date().toISOString().split("T")[0];
-
+async function getPageData(userId: string, date: string) {
   const [profile, logs, recentRows] = await Promise.all([
     db.query.userProfiles.findFirst({ where: eq(userProfiles.userId, userId) }),
     db
       .select()
       .from(foodLogs)
       .innerJoin(foodItems, eq(foodLogs.foodItemId, foodItems.id))
-      .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, today)))
+      .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, date)))
       .orderBy(foodLogs.createdAt),
     db
       .select({
@@ -125,7 +124,11 @@ async function getPageData(userId: string) {
   };
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
@@ -133,7 +136,17 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { totals, targets, meals, recentFoods } = await getPageData(user.id);
+  const today = new Date().toISOString().split("T")[0];
+  const { date: dateParam } = await searchParams;
+  const date =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= today
+      ? dateParam
+      : today;
+
+  const { totals, targets, meals, recentFoods } = await getPageData(
+    user.id,
+    date,
+  );
   const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
 
   return (
@@ -152,7 +165,9 @@ export default async function Home() {
 
       <main className="flex flex-col gap-6 p-6 max-w-lg mx-auto w-full pb-8">
         <div className="flex flex-col gap-1">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">Today</p>
+          <p className="text-xs text-zinc-500 uppercase tracking-wide">
+            {date === today ? "Today" : date}
+          </p>
           <div className="flex items-end gap-2">
             <span className="text-5xl font-bold text-white">
               {totals.calories}
@@ -195,7 +210,9 @@ export default async function Home() {
           />
         </div>
 
-        <NutritionControls recentFoods={recentFoods} />
+        <NutritionControls recentFoods={recentFoods} date={date} />
+
+        <DayNav date={date} />
 
         <MealsList
           meals={meals}

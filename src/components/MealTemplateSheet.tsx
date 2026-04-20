@@ -1,15 +1,15 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { lookupFood, searchFood } from "@/app/actions/food";
+import type { MealTemplate, TemplateItem } from "@/app/actions/meals";
 import {
   addItemToTemplate,
   deleteMealTemplate,
   logMealTemplate,
   removeItemFromTemplate,
 } from "@/app/actions/meals";
-import { lookupFood, searchFood } from "@/app/actions/food";
-import type { MealTemplate, TemplateItem } from "@/app/actions/meals";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -143,7 +143,7 @@ export default function MealTemplateSheet({
         className="fixed inset-0 bg-black/60 z-50 w-full cursor-default"
         onClick={onClose}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-[60] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh]">
+      <div className="fixed bottom-0 left-0 right-0 z-60 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl max-w-lg mx-auto flex flex-col max-h-[85vh]">
         <div className="px-6 pt-5 pb-4 shrink-0 flex items-center justify-between border-b border-zinc-900">
           <div>
             <p className="text-white font-medium">{template.name}</p>
@@ -268,7 +268,6 @@ export default function MealTemplateSheet({
                   placeholder="Search foods…"
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
-                  autoFocus
                   className="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors"
                 />
                 {searching && (
@@ -327,7 +326,6 @@ export default function MealTemplateSheet({
                       value={pendingGrams}
                       onChange={(e) => setPendingGrams(e.target.value)}
                       min="1"
-                      autoFocus
                       className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-10"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500">

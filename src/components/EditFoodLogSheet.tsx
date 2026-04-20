@@ -1,8 +1,8 @@
 "use client";
 
-import { deleteFoodLog, updateFoodLog } from "@/app/actions/food";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { deleteFoodLog, updateFoodLog } from "@/app/actions/food";
 
 type LogEntry = {
   id: number;
@@ -139,7 +139,7 @@ export default function EditFoodLogSheet({
                   step="0.1"
                   className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-24"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500 truncate max-w-[80px] text-right">
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500 truncate max-w-20 text-right">
                   {entry.servingSize ?? `×${entry.servingQuantity}g`}
                 </span>
               </div>

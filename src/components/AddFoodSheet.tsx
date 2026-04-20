@@ -1,10 +1,10 @@
 "use client";
 
-import { addFoodLog } from "@/app/actions/food";
-import type { FoodItem } from "@/app/actions/food";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { FoodItem } from "@/app/actions/food";
+import { addFoodLog } from "@/app/actions/food";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -15,9 +15,11 @@ const MEAL_TYPES = [
 
 export default function AddFoodSheet({
   food,
+  date,
   onClose,
 }: {
   food: FoodItem;
+  date: string;
   onClose: () => void;
 }) {
   const hasServing = !!food.servingQuantity && Number(food.servingQuantity) > 0;
@@ -54,7 +56,11 @@ export default function AddFoodSheet({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
+      <button
+        type="button"
+        className="fixed inset-0 bg-black/60 z-40"
+        onClick={onClose}
+      />
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 rounded-t-2xl p-6 flex flex-col gap-5 max-w-lg mx-auto">
         <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto -mt-2" />
 
@@ -90,6 +96,7 @@ export default function AddFoodSheet({
 
         <form action={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="foodItemId" value={food.id} />
+          <input type="hidden" name="date" value={date} />
           <input type="hidden" name="mealType" value={mealType} />
 
           <div className="flex flex-col gap-1.5">
@@ -132,12 +139,12 @@ export default function AddFoodSheet({
                     type="number"
                     value={servings}
                     onChange={(e) => setServings(e.target.value)}
-                    min="0.1"
-                    step="0.1"
+                    min="1"
+                    step="1"
                     required
                     className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-24"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500 truncate max-w-[80px] text-right">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500 truncate max-w-20 text-right">
                     {food.servingSize ?? `×${food.servingQuantity}g`}
                   </span>
                 </div>
@@ -164,9 +171,9 @@ export default function AddFoodSheet({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-500 uppercase tracking-wide">
+            <div className="text-xs text-zinc-500 uppercase tracking-wide">
               Meal
-            </label>
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {MEAL_TYPES.map((m) => (
                 <button

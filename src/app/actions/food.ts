@@ -185,7 +185,12 @@ export async function addFoodLog(formData: FormData) {
     | "lunch"
     | "dinner"
     | "snack";
-  const date = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
+  const dateParam = formData.get("date") as string | null;
+  const date =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= today
+      ? dateParam
+      : today;
 
   await db.insert(foodLogs).values({
     userId: user.id,

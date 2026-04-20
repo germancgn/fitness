@@ -10,8 +10,10 @@ type Mode = null | "scan" | "recent";
 
 export default function NutritionControls({
   recentFoods,
+  date,
 }: {
   recentFoods: FoodItem[];
+  date: string;
 }) {
   const [mode, setMode] = useState<Mode>(null);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
@@ -55,6 +57,7 @@ export default function NutritionControls({
       {selectedFood && (
         <AddFoodSheet
           food={selectedFood}
+          date={date}
           onClose={() => setSelectedFood(null)}
         />
       )}
