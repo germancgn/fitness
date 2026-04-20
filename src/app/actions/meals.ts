@@ -159,6 +159,33 @@ export async function addItemToTemplate(
   return inserted?.id;
 }
 
+export async function updateItemInTemplate(itemId: number, quantity: number) {
+  const user = await getUser();
+  if (!user) return;
+
+  const [item] = await db
+    .select({ mealTemplateId: mealTemplateItems.mealTemplateId })
+    .from(mealTemplateItems)
+    .where(eq(mealTemplateItems.id, itemId));
+  if (!item) return;
+
+  const [template] = await db
+    .select({ id: mealTemplates.id })
+    .from(mealTemplates)
+    .where(
+      and(
+        eq(mealTemplates.id, item.mealTemplateId),
+        eq(mealTemplates.userId, user.id),
+      ),
+    );
+  if (!template) return;
+
+  await db
+    .update(mealTemplateItems)
+    .set({ quantity: String(quantity) })
+    .where(eq(mealTemplateItems.id, itemId));
+}
+
 export async function removeItemFromTemplate(itemId: number) {
   const user = await getUser();
   if (!user) return;

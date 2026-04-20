@@ -10,6 +10,7 @@ import {
   deleteMealTemplate,
   logMealTemplate,
   removeItemFromTemplate,
+  updateItemInTemplate,
 } from "@/app/actions/meals";
 import FoodScanner from "@/components/FoodScanner";
 
@@ -57,6 +58,8 @@ export default function MealTemplateSheet({
   const [pendingFood, setPendingFood] = useState<SearchResult | null>(null);
   const [pendingGrams, setPendingGrams] = useState("100");
   const [showScanner, setShowScanner] = useState(false);
+  const [editingItem, setEditingItem] = useState<TemplateItem | null>(null);
+  const [editGrams, setEditGrams] = useState("");
   const router = useRouter();
 
   async function handleLog() {
@@ -175,30 +178,99 @@ export default function MealTemplateSheet({
               </p>
             ) : (
               <div className="flex flex-col divide-y divide-zinc-900">
-                {template.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between py-3"
-                  >
-                    <div className="flex flex-col gap-0.5 flex-1 min-w-0 mr-3">
-                      <p className="text-sm text-white truncate">{item.name}</p>
-                      <p className="text-xs text-zinc-500">
-                        {item.quantity}g ·{" "}
-                        {Math.round(
-                          ((Number(item.calories) || 0) * item.quantity) / 100,
-                        )}{" "}
-                        kcal
+                {template.items.map((item) =>
+                  editingItem?.id === item.id ? (
+                    <div key={item.id} className="flex items-center gap-2 py-3">
+                      <p className="text-sm text-white truncate flex-1 min-w-0 mr-1">
+                        {item.name}
                       </p>
+                      <div className="relative shrink-0">
+                        <input
+                          type="number"
+                          value={editGrams}
+                          onChange={(e) => setEditGrams(e.target.value)}
+                          min="1"
+                          className="w-20 bg-zinc-900 border border-zinc-600 text-white rounded-lg px-3 py-1.5 text-sm outline-none pr-7"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
+                          g
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={
+                          loading || !editGrams || Number(editGrams) <= 0
+                        }
+                        onClick={async () => {
+                          const qty = Number(editGrams);
+                          if (qty <= 0) return;
+                          setLoading(true);
+                          await updateItemInTemplate(item.id, qty);
+                          setTemplate((t) => ({
+                            ...t,
+                            items: t.items.map((i) =>
+                              i.id === item.id ? { ...i, quantity: qty } : i,
+                            ),
+                            totalCalories:
+                              t.totalCalories -
+                              Math.round(
+                                ((Number(item.calories) || 0) * item.quantity) /
+                                  100,
+                              ) +
+                              Math.round(
+                                ((Number(item.calories) || 0) * qty) / 100,
+                              ),
+                          }));
+                          setEditingItem(null);
+                          setLoading(false);
+                        }}
+                        className="text-sm text-white bg-zinc-700 hover:bg-zinc-600 rounded-lg px-3 py-1.5 shrink-0 transition-colors disabled:opacity-40"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem(null)}
+                        className="text-zinc-500 hover:text-white transition-colors text-lg px-1 shrink-0"
+                      >
+                        ×
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(item)}
-                      className="text-zinc-600 hover:text-red-500 transition-colors text-lg shrink-0 px-1"
+                  ) : (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between py-3"
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingItem(item);
+                          setEditGrams(String(item.quantity));
+                        }}
+                        className="flex flex-col gap-0.5 flex-1 min-w-0 mr-3 text-left"
+                      >
+                        <p className="text-sm text-white truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {item.quantity}g ·{" "}
+                          {Math.round(
+                            ((Number(item.calories) || 0) * item.quantity) /
+                              100,
+                          )}{" "}
+                          kcal
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item)}
+                        className="text-zinc-600 hover:text-red-500 transition-colors text-lg shrink-0 px-1"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ),
+                )}
               </div>
             )}
 
