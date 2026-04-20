@@ -147,13 +147,16 @@ export async function addItemToTemplate(
     );
   if (!template) return;
 
-  await db
+  const [inserted] = await db
     .insert(mealTemplateItems)
     .values({
       mealTemplateId: templateId,
       foodItemId,
       quantity: String(quantity),
-    });
+    })
+    .returning({ id: mealTemplateItems.id });
+
+  return inserted?.id;
 }
 
 export async function removeItemFromTemplate(itemId: number) {

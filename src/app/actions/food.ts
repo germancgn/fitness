@@ -82,15 +82,14 @@ export type SearchResult = FoodItem & { offBarcode: string };
 export async function searchFood(query: string): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
-  const url = new URL("https://de.openfoodfacts.org/cgi/search.pl");
+  const url = new URL("https://world.openfoodfacts.org/cgi/search.pl");
   url.searchParams.set("search_terms", query);
-  url.searchParams.set("search_simple", "1");
   url.searchParams.set("action", "process");
   url.searchParams.set("json", "1");
   url.searchParams.set("page_size", "20");
   url.searchParams.set(
     "fields",
-    "id,product_name,brands,nutriments,image_front_url",
+    "id,product_name,brands,nutriments,image_front_url,serving_size,serving_quantity",
   );
 
   const res = await fetch(url.toString());

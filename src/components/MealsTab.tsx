@@ -2,10 +2,15 @@
 
 import { createMealTemplate, getMealTemplates } from "@/app/actions/meals";
 import type { MealTemplate } from "@/app/actions/meals";
+import type { FoodItem } from "@/app/actions/food";
 import MealTemplateSheet from "@/components/MealTemplateSheet";
 import { useEffect, useState } from "react";
 
-export default function MealsTab() {
+export default function MealsTab({
+  recentFoods = [],
+}: {
+  recentFoods?: FoodItem[];
+}) {
   const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -108,6 +113,7 @@ export default function MealsTab() {
       {selected && (
         <MealTemplateSheet
           template={selected}
+          recentFoods={recentFoods}
           onClose={() => setSelected(null)}
           onDeleted={() => {
             setTemplates((ts) => ts.filter((t) => t.id !== selected.id));

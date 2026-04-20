@@ -203,7 +203,7 @@ export default function RecentFoodsSheet({
             </form>
           )}
 
-          {tab === "meals" && <MealsTab />}
+          {tab === "meals" && <MealsTab recentFoods={foods} />}
         </div>
       </div>
     </>

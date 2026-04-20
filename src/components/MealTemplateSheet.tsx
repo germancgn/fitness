@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { lookupFood, searchFood } from "@/app/actions/food";
+import type { FoodItem } from "@/app/actions/food";
+import { createCustomFood, lookupFood, searchFood } from "@/app/actions/food";
 import type { MealTemplate, TemplateItem } from "@/app/actions/meals";
 import {
   addItemToTemplate,
@@ -10,6 +11,7 @@ import {
   logMealTemplate,
   removeItemFromTemplate,
 } from "@/app/actions/meals";
+import FoodScanner from "@/components/FoodScanner";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -19,6 +21,7 @@ const MEAL_TYPES = [
 ] as const;
 
 type View = "detail" | "addFood";
+type AddTab = "search" | "manual";
 
 type SearchResult = {
   id: number;
@@ -32,15 +35,18 @@ type SearchResult = {
 
 export default function MealTemplateSheet({
   template: initial,
+  recentFoods = [],
   onClose,
   onDeleted,
 }: {
   template: MealTemplate;
+  recentFoods?: FoodItem[];
   onClose: () => void;
   onDeleted: () => void;
 }) {
   const [template, setTemplate] = useState(initial);
   const [view, setView] = useState<View>("detail");
+  const [addTab, setAddTab] = useState<AddTab>("search");
   const [mealType, setMealType] = useState<
     "breakfast" | "lunch" | "dinner" | "snack"
   >("lunch");
@@ -50,6 +56,7 @@ export default function MealTemplateSheet({
   const [searching, setSearching] = useState(false);
   const [pendingFood, setPendingFood] = useState<SearchResult | null>(null);
   const [pendingGrams, setPendingGrams] = useState("100");
+  const [showScanner, setShowScanner] = useState(false);
   const router = useRouter();
 
   async function handleLog() {
@@ -109,10 +116,10 @@ export default function MealTemplateSheet({
     const qty = Number(pendingGrams) || 0;
     if (qty <= 0) return;
     setLoading(true);
-    await addItemToTemplate(template.id, pendingFood.id, qty);
+    const newId = await addItemToTemplate(template.id, pendingFood.id, qty);
     const kcalPer100 = Number(pendingFood.calories) || 0;
     const newItem: TemplateItem = {
-      id: Date.now(),
+      id: newId ?? Date.now(),
       foodItemId: pendingFood.id,
       name: pendingFood.name,
       quantity: qty,
@@ -248,20 +255,60 @@ export default function MealTemplateSheet({
 
         {view === "addFood" && (
           <div className="overflow-y-auto flex-1 px-4 py-4 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setView("detail");
-                setPendingFood(null);
-                setQuery("");
-                setSearchResults([]);
-              }}
-              className="text-zinc-500 hover:text-white text-sm text-left transition-colors"
-            >
-              ← Back
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setView("detail");
+                  setPendingFood(null);
+                  setQuery("");
+                  setSearchResults([]);
+                }}
+                className="text-zinc-500 hover:text-white text-sm transition-colors"
+              >
+                ← Back
+              </button>
+              {!pendingFood && (
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 rounded-lg px-3 py-1.5 transition-colors"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 12h10"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Scan
+                </button>
+              )}
+            </div>
 
-            {!pendingFood ? (
+            {!pendingFood && (
+              <div className="flex gap-1 bg-zinc-900 rounded-lg p-1">
+                {(["search", "manual"] as AddTab[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setAddTab(t)}
+                    className={`flex-1 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${addTab === t ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-white"}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!pendingFood && addTab === "search" && (
               <>
                 <input
                   type="search"
@@ -305,8 +352,119 @@ export default function MealTemplateSheet({
                     No results found.
                   </p>
                 )}
+                {!query && recentFoods.length > 0 && (
+                  <>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                      Recent
+                    </p>
+                    <div className="flex flex-col divide-y divide-zinc-900">
+                      {recentFoods.map((food) => (
+                        <button
+                          key={food.id}
+                          type="button"
+                          onClick={() => {
+                            setPendingFood({
+                              id: food.id,
+                              offBarcode: "",
+                              name: food.name,
+                              calories: food.calories,
+                              servingSize: food.servingSize,
+                              servingQuantity: food.servingQuantity,
+                              imageFrontUrl: food.imageFrontUrl,
+                            });
+                            setPendingGrams(food.servingQuantity ?? "100");
+                          }}
+                          className="flex items-center justify-between py-3 text-left hover:bg-zinc-900 -mx-2 px-2 rounded-lg transition-colors"
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm text-white">{food.name}</p>
+                            <p className="text-xs text-zinc-500">
+                              {food.calories
+                                ? `${Math.round(Number(food.calories))} kcal`
+                                : "—"}{" "}
+                              per 100g
+                            </p>
+                          </div>
+                          <span className="text-zinc-600 text-lg shrink-0">
+                            +
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
-            ) : (
+            )}
+
+            {!pendingFood && addTab === "manual" && (
+              <form
+                action={async (fd) => {
+                  setLoading(true);
+                  const item = await createCustomFood(fd);
+                  setLoading(false);
+                  setPendingFood({
+                    id: item.id,
+                    offBarcode: "",
+                    name: item.name,
+                    calories: item.calories,
+                    servingSize: item.servingSize,
+                    servingQuantity: item.servingQuantity,
+                    imageFrontUrl: item.imageFrontUrl,
+                  });
+                  setPendingGrams(item.servingQuantity ?? "100");
+                }}
+                className="flex flex-col gap-4 pt-1"
+              >
+                <ManualField
+                  name="name"
+                  label="Food name"
+                  placeholder="e.g. Scrambled eggs"
+                  required
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <ManualField
+                    name="calories"
+                    label="Calories"
+                    placeholder="0"
+                    unit="kcal"
+                    type="number"
+                  />
+                  <ManualField
+                    name="protein"
+                    label="Protein"
+                    placeholder="0"
+                    unit="g"
+                    type="number"
+                  />
+                  <ManualField
+                    name="carbs"
+                    label="Carbs"
+                    placeholder="0"
+                    unit="g"
+                    type="number"
+                  />
+                  <ManualField
+                    name="fat"
+                    label="Fat"
+                    placeholder="0"
+                    unit="g"
+                    type="number"
+                  />
+                </div>
+                <p className="text-xs text-zinc-600">
+                  All values are per 100g.
+                </p>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-40"
+                >
+                  {loading ? "Adding…" : "Next →"}
+                </button>
+              </form>
+            )}
+
+            {pendingFood && (
               <div className="flex flex-col gap-4">
                 <div>
                   <p className="text-white font-medium">{pendingFood.name}</p>
@@ -352,7 +510,70 @@ export default function MealTemplateSheet({
             )}
           </div>
         )}
+
+        {showScanner && (
+          <FoodScanner
+            onFood={(item) => {
+              setShowScanner(false);
+              setPendingFood({
+                id: item.id,
+                offBarcode: "",
+                name: item.name,
+                calories: item.calories,
+                servingSize: item.servingSize,
+                servingQuantity: item.servingQuantity,
+                imageFrontUrl: item.imageFrontUrl,
+              });
+              setPendingGrams(item.servingQuantity ?? "100");
+              setView("addFood");
+            }}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
       </div>
     </>
+  );
+}
+
+function ManualField({
+  name,
+  label,
+  placeholder,
+  unit,
+  type = "text",
+  required,
+}: {
+  name: string;
+  label: string;
+  placeholder: string;
+  unit?: string;
+  type?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label
+        htmlFor={name}
+        className="text-xs text-zinc-500 uppercase tracking-wide"
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={name}
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          required={required}
+          min={type === "number" ? "0" : undefined}
+          className="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-10"
+        />
+        {unit && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
+            {unit}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
