@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import DayNav from "@/components/DayNav";
 import MealsList from "@/components/MealsList";
+import NutritionAnalysis from "@/components/NutritionAnalysis";
 import NutritionControls from "@/components/NutritionControls";
 import { db } from "@/db";
 import { foodItems, foodLogs, userProfiles } from "@/db/schema";
@@ -222,6 +223,8 @@ export default async function Home({
         <NutritionControls recentFoods={recentFoods} date={date} />
 
         <DayNav date={date} />
+
+        <NutritionAnalysis date={date} />
 
         <MealsList
           meals={meals}
