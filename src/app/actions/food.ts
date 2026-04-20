@@ -102,7 +102,7 @@ export async function searchFood(query: string): Promise<SearchResult[]> {
     return [];
   }
 
-  return (data.products ?? [])
+  return ((data.products as Record<string, unknown>[]) ?? [])
     .filter((p: Record<string, unknown>) => p.product_name && p.id)
     .map((p: Record<string, unknown>) => {
       const n =
