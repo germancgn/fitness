@@ -1,11 +1,11 @@
 "use server";
 
-import { db } from "@/db";
-import { foodItems, foodLogs } from "@/db/schema";
-import { createClient } from "@/utils/supabase/server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { db } from "@/db";
+import { foodItems, foodLogs } from "@/db/schema";
+import { createClient } from "@/utils/supabase/server";
 
 export type FoodItem = {
   id: number;
@@ -129,10 +129,10 @@ export async function createCustomFood(formData: FormData): Promise<FoodItem> {
     .insert(foodItems)
     .values({
       name: formData.get("name") as string,
-      calories: formData.get("calories") as string,
-      protein: formData.get("protein") as string,
-      carbs: formData.get("carbs") as string,
-      fat: formData.get("fat") as string,
+      calories: (formData.get("calories") || "0") as string,
+      protein: (formData.get("protein") || "0") as string,
+      carbs: (formData.get("carbs") || "0") as string,
+      fat: (formData.get("fat") || "0") as string,
     })
     .returning();
   return item;

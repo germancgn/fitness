@@ -312,6 +312,7 @@ function CustomField({
           placeholder={placeholder}
           required={required}
           min={type === "number" ? "0" : undefined}
+          step={type === "number" ? "0.1" : undefined}
           className="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-10"
         />
         {unit && (
