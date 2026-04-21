@@ -1,10 +1,7 @@
-import BottomNav from "@/components/BottomNav";
-import { db } from "@/db";
-import { userProfiles } from "@/db/schema";
-import { createClient } from "@/utils/supabase/server";
-import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import BottomNav from "@/components/BottomNav";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function AppLayout({
   children,
@@ -14,16 +11,13 @@ export default async function AppLayout({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (!user) redirect("/sign-in");
+  if (!session) redirect("/sign-in");
 
-  const profile = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.userId, user.id),
-  });
-
-  if (!profile) redirect("/onboarding");
+  const hasProfile = session.user.app_metadata?.has_profile === true;
+  if (!hasProfile) redirect("/onboarding");
 
   return (
     <div className="pb-16">

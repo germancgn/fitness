@@ -142,9 +142,9 @@ export default async function Home({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
 
   const today = new Date().toISOString().split("T")[0];
   const { date: dateParam } = await searchParams;
@@ -154,7 +154,7 @@ export default async function Home({
       : today;
 
   const { totals, targets, meals, recentFoods } = await getPageData(
-    user.id,
+    session.user.id,
     date,
   );
   const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
