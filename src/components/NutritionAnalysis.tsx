@@ -13,10 +13,11 @@ export default function NutritionAnalysis({ date }: { date: string }) {
     setError("");
 
     try {
+      const currentHour = new Date().getHours();
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date }),
+        body: JSON.stringify({ date, currentHour }),
       });
 
       if (!res.ok || !res.body) {

@@ -15,10 +15,22 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const { date } = (await req.json()) as { date: string };
+  const { date, currentHour } = (await req.json()) as {
+    date: string;
+    currentHour: number;
+  };
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return new Response("Invalid date", { status: 400 });
   }
+
+  const timeOfDay =
+    currentHour < 12
+      ? "morning"
+      : currentHour < 17
+        ? "afternoon"
+        : currentHour < 21
+          ? "evening"
+          : "night";
 
   const [profile, logs] = await Promise.all([
     db.query.userProfiles.findFirst({
@@ -78,18 +90,24 @@ Targets: ${profile.calorieTarget} kcal, ${profile.proteinTarget}g protein, ${pro
 
   const prompt = `You are a concise nutrition coach. Analyze this user's food log for ${date} and give actionable feedback.
 
-User profile:
+Current time: ${timeOfDay} (${currentHour}:00)
+
+<User profile>
 ${userContext}
+</User profile>
 
-What they ate today:
+<What they ate today>
 ${mealSummary || "Nothing logged yet."}
+</What they ate today>
 
-Totals: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
+Totals so far: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
+
+IMPORTANT: It's still ${timeOfDay}. This is not a full day's intake yet. Only comment on meals they've already eaten. If they're on track for the time of day, acknowledge that they have more time to meet their goals.
 
 Give a brief, structured analysis covering:
-1. How today's intake compares to their targets
+1. How their current intake compares to what they should have eaten by now
 2. What they did well
-3. 1-2 specific improvements for tomorrow
+3. Practical guidance for the rest of the day (if applicable)
 
 Keep it friendly, practical, and under 200 words. Use plain text — no markdown headers or bullet symbols, just clean paragraphs.`;
 
