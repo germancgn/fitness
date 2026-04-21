@@ -102,7 +102,7 @@ ${mealSummary || "Nothing logged yet."}
 
 Totals so far: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
 
-IMPORTANT: It's still ${timeOfDay}. This is not a full day's intake yet. Only comment on meals they've already eaten. If they're on track for the time of day, acknowledge that they have more time to meet their goals.
+IMPORTANT: It's ${timeOfDay}. This might be not a full day's intake yet. Only comment on meals they've already eaten. If they're on track for the time of day, acknowledge that they have more time to meet their goals.
 
 Give a brief, structured analysis covering:
 1. How their current intake compares to what they should have eaten by now
