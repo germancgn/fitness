@@ -1,5 +1,7 @@
 "use client";
 
+import AiChat from "@/components/AiChat";
+import { readStream } from "@/utils/readStream";
 import { useState } from "react";
 
 export default function NutritionAnalysis({ date }: { date: string }) {
@@ -13,11 +15,10 @@ export default function NutritionAnalysis({ date }: { date: string }) {
     setError("");
 
     try {
-      const currentHour = new Date().getHours();
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, currentHour }),
+        body: JSON.stringify({ date, currentHour: new Date().getHours() }),
       });
 
       if (!res.ok || !res.body) {
@@ -26,15 +27,8 @@ export default function NutritionAnalysis({ date }: { date: string }) {
         return;
       }
 
+      await readStream(res.body, (chunk) => setText((prev) => prev + chunk));
       setState("done");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        setText((prev) => prev + decoder.decode(value, { stream: true }));
-      }
     } catch {
       setError("Something went wrong. Try again.");
       setState("idle");
@@ -54,36 +48,34 @@ export default function NutritionAnalysis({ date }: { date: string }) {
     );
   }
 
+  if (state === "done" && text) {
+    return (
+      <AiChat
+        initialMessage={text}
+        onDismiss={() => {
+          setState("idle");
+          setText("");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
         <SparkleIcon />
         <span className="text-sm font-medium text-white">AI Analysis</span>
-        {state === "loading" && (
-          <span className="ml-auto flex gap-1 items-center">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
-              style={{ animationDelay: "150ms" }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
-              style={{ animationDelay: "300ms" }}
-            />
-          </span>
-        )}
-        {state === "done" && (
-          <button
-            type="button"
-            onClick={() => {
-              setState("idle");
-              setText("");
-            }}
-            className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-          >
-            Dismiss
-          </button>
-        )}
+        <span className="ml-auto flex gap-1 items-center">
+          <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
+            style={{ animationDelay: "150ms" }}
+          />
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"
+            style={{ animationDelay: "300ms" }}
+          />
+        </span>
       </div>
       <div className="px-4 py-3">
         {error ? (
@@ -91,9 +83,7 @@ export default function NutritionAnalysis({ date }: { date: string }) {
         ) : (
           <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
             {text}
-            {state === "loading" && (
-              <span className="inline-block w-0.5 h-4 bg-zinc-500 ml-0.5 animate-pulse align-text-bottom" />
-            )}
+            <span className="inline-block w-0.5 h-4 bg-zinc-500 ml-0.5 animate-pulse align-text-bottom" />
           </p>
         )}
       </div>

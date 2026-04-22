@@ -66,3 +66,4 @@ The AI layer (Claude API) is the differentiator — it sees both nutrition and t
 - Don't build your own food nutrition database — cache from Open Food Facts
 - Don't put Drizzle queries in client components
 - Don't create a `users` table — reference `auth.users` via UUID in `user_profiles`
+- **Never remove `// biome-ignore` comments** — they are intentional lint suppressions, preserve them exactly as-is
