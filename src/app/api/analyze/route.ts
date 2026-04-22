@@ -15,9 +15,10 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const { date, currentHour } = (await req.json()) as {
+  const { date, currentHour, today } = (await req.json()) as {
     date: string;
     currentHour: number;
+    today: string;
   };
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return new Response("Invalid date", { status: 400 });
@@ -88,26 +89,29 @@ export async function POST(req: Request) {
 Targets: ${profile.calorieTarget} kcal, ${profile.proteinTarget}g protein, ${profile.carbsTarget}g carbs, ${profile.fatTarget}g fat`
     : "No profile set — use general healthy eating guidelines.";
 
+  const isPastDay = today !== date;
+
   const prompt = `You are a concise nutrition coach. Analyze this user's food log for ${date} and give actionable feedback.
 
-Current time: ${timeOfDay} (${currentHour}:00)
+Today's date: ${today}
+Log date: ${date}
+${isPastDay ? `Note: the user is reviewing a past day. Treat the log as complete — the full day has already passed.` : `Current time: ${timeOfDay} (${currentHour}:00) — this may not be a full day's intake yet.`}
 
 <User profile>
 ${userContext}
 </User profile>
 
-<What they ate today>
-${mealSummary || "Nothing logged yet."}
-</What they ate today>
+<What they ate>
+${mealSummary || "Nothing logged."}
+</What they ate>
 
-Totals so far: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
+Totals: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
 
-IMPORTANT: It's ${timeOfDay}. This might be not a full day's intake yet. Only comment on meals they've already eaten. If they're on track for the time of day, acknowledge that they have more time to meet their goals.
-
-Give a brief, structured analysis covering:
-1. How their current intake compares to what they should have eaten by now
-2. What they did well
-3. Practical guidance for the rest of the day (if applicable)
+${
+  isPastDay
+    ? "Give a complete day review: what they did well, where they fell short, and what to do differently next time."
+    : "Only comment on meals already eaten. If they're on track for the time of day, acknowledge they have more time to meet their goals. Give practical guidance for the rest of the day."
+}
 
 Keep it friendly, practical, and under 200 words. Use plain text — no markdown headers or bullet symbols, just clean paragraphs.`;
 

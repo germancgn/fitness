@@ -23,7 +23,9 @@ function formatLabel(dateStr: string, today: string): string {
 
 export default function DayNav({ date }: { date: string }) {
   const router = useRouter();
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
   const isToday = date === today;
 
   function go(days: number) {

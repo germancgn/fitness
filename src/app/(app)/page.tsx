@@ -5,6 +5,7 @@ import DayNav from "@/components/DayNav";
 import MealsList from "@/components/MealsList";
 import NutritionAnalysis from "@/components/NutritionAnalysis";
 import NutritionControls from "@/components/NutritionControls";
+import TodayRedirect from "@/components/TodayRedirect";
 import { db } from "@/db";
 import { foodItems, foodLogs, userProfiles } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
@@ -146,12 +147,16 @@ export default async function Home({
   } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const today = new Date().toISOString().split("T")[0];
+  const todayUTC = new Date().toISOString().split("T")[0];
+  const tomorrowUTC = new Date(Date.now() + 86400000)
+    .toISOString()
+    .split("T")[0];
   const { date: dateParam } = await searchParams;
-  const date =
-    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= today
-      ? dateParam
-      : today;
+  const isExplicitDate =
+    !!dateParam &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dateParam) &&
+    dateParam <= tomorrowUTC;
+  const date = isExplicitDate ? dateParam : todayUTC;
 
   const { totals, targets, meals, recentFoods } = await getPageData(
     session.user.id,
@@ -176,7 +181,7 @@ export default async function Home({
       <main className="flex flex-col gap-6 p-6 max-w-lg mx-auto w-full pb-8">
         <div className="flex flex-col gap-1">
           <p className="text-xs text-zinc-500 uppercase tracking-wide">
-            {date === today ? "Today" : date}
+            {date === todayUTC ? "Today" : date}
           </p>
           <div className="flex items-end gap-2">
             <span className="text-5xl font-bold text-white">
@@ -222,6 +227,7 @@ export default async function Home({
 
         <NutritionControls recentFoods={recentFoods} date={date} />
 
+        {!isExplicitDate && <TodayRedirect serverDate={todayUTC} />}
         <DayNav date={date} />
 
         <NutritionAnalysis date={date} />
