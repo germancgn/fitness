@@ -157,55 +157,7 @@ export default function RecentFoodsSheet({
             ))}
 
           {tab === "custom" && (
-            <form
-              action={handleCustomSubmit}
-              className="flex flex-col gap-4 pt-2"
-            >
-              <CustomField
-                name="name"
-                label="Food name"
-                placeholder="e.g. Chicken breast"
-                required
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <CustomField
-                  name="calories"
-                  label="Calories"
-                  placeholder="0"
-                  unit="kcal"
-                  type="number"
-                />
-                <CustomField
-                  name="protein"
-                  label="Protein"
-                  placeholder="0"
-                  unit="g"
-                  type="number"
-                />
-                <CustomField
-                  name="carbs"
-                  label="Carbs"
-                  placeholder="0"
-                  unit="g"
-                  type="number"
-                />
-                <CustomField
-                  name="fat"
-                  label="Fat"
-                  placeholder="0"
-                  unit="g"
-                  type="number"
-                />
-              </div>
-              <p className="text-xs text-zinc-600">All values are per 100g.</p>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-40"
-              >
-                {loading ? "Adding…" : "Add food"}
-              </button>
-            </form>
+            <CustomFoodForm onSubmit={handleCustomSubmit} loading={loading} />
           )}
 
           {tab === "meals" && <MealsTab recentFoods={foods} />}
@@ -282,6 +234,132 @@ function TabButton({
   );
 }
 
+function CustomFoodForm({
+  onSubmit,
+  loading,
+}: {
+  onSubmit: (formData: FormData) => void;
+  loading: boolean;
+}) {
+  const [name, setName] = useState("");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [autofilling, setAutofilling] = useState(false);
+
+  async function handleAutofill() {
+    if (!name.trim()) return;
+    setAutofilling(true);
+    try {
+      const res = await fetch("/api/food-autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.calories != null)
+          setCalories(String(Math.round(data.calories)));
+        if (data.protein != null)
+          setProtein(String(Math.round(data.protein * 10) / 10));
+        if (data.carbs != null)
+          setCarbs(String(Math.round(data.carbs * 10) / 10));
+        if (data.fat != null) setFat(String(Math.round(data.fat * 10) / 10));
+      }
+    } finally {
+      setAutofilling(false);
+    }
+  }
+
+  return (
+    <form action={onSubmit} className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="name"
+          className="text-xs text-zinc-500 uppercase tracking-wide"
+        >
+          Food name
+        </label>
+        <div className="relative">
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="e.g. Chicken breast"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-10"
+          />
+          {name.trim() && (
+            <button
+              type="button"
+              onClick={handleAutofill}
+              disabled={autofilling}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white disabled:opacity-40 transition-colors"
+              title="Autofill with AI"
+            >
+              {autofilling ? (
+                <span className="w-4 h-4 block rounded-full border border-zinc-500 border-t-white animate-spin" />
+              ) : (
+                <SparkleIcon size={18} />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <CustomField
+          name="calories"
+          label="Calories"
+          placeholder="0"
+          unit="kcal"
+          type="number"
+          value={calories}
+          onChange={setCalories}
+        />
+        <CustomField
+          name="protein"
+          label="Protein"
+          placeholder="0"
+          unit="g"
+          type="number"
+          value={protein}
+          onChange={setProtein}
+        />
+        <CustomField
+          name="carbs"
+          label="Carbs"
+          placeholder="0"
+          unit="g"
+          type="number"
+          value={carbs}
+          onChange={setCarbs}
+        />
+        <CustomField
+          name="fat"
+          label="Fat"
+          placeholder="0"
+          unit="g"
+          type="number"
+          value={fat}
+          onChange={setFat}
+        />
+      </div>
+      <p className="text-xs text-zinc-600">All values are per 100g.</p>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-40"
+      >
+        {loading ? "Adding…" : "Add food"}
+      </button>
+    </form>
+  );
+}
+
 function CustomField({
   name,
   label,
@@ -289,6 +367,8 @@ function CustomField({
   unit,
   type = "text",
   required,
+  value,
+  onChange,
 }: {
   name: string;
   label: string;
@@ -296,6 +376,8 @@ function CustomField({
   unit?: string;
   type?: string;
   required?: boolean;
+  value?: string;
+  onChange?: (v: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -314,6 +396,8 @@ function CustomField({
           required={required}
           min={type === "number" ? "0" : undefined}
           step={type === "number" ? "0.1" : undefined}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors pr-10"
         />
         {unit && (
