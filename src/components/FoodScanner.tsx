@@ -1,6 +1,6 @@
 "use client";
 
-import { BarcodeDetector, type BarcodeFormat } from "barcode-detector/ponyfill";
+import { BarcodeDetector, type BarcodeFormat } from "barcode-detector";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FoodItem } from "@/app/actions/food";
 import { lookupFood } from "@/app/actions/food";
