@@ -190,6 +190,11 @@ export default async function Home({
             <span className="text-zinc-500 text-sm mb-2">
               / {targets.calories} kcal
             </span>
+            {totals.calories < targets.calories && (
+              <span className="text-zinc-500 text-sm ml-auto">
+                {targets.calories - totals.calories} left
+              </span>
+            )}
           </div>
           <div className="h-2 bg-zinc-900 rounded-full overflow-hidden mt-1">
             <div
