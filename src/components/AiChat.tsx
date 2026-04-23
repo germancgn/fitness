@@ -163,9 +163,12 @@ export default function AiChat({
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              onSend();
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              const isMobile = window.matchMedia("(pointer: coarse)").matches;
+              if (!isMobile) {
+                e.preventDefault();
+                onSend();
+              }
             }
           }}
           maxLength={512}
