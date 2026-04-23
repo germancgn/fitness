@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import DayNav from "@/components/DayNav";
+import MacroCards from "@/components/MacroCards";
 import MealsList from "@/components/MealsList";
 import NutritionAnalysis from "@/components/NutritionAnalysis";
 import NutritionControls from "@/components/NutritionControls";
@@ -117,6 +118,16 @@ async function getPageData(userId: string, date: string) {
     return acc;
   }, {});
 
+  const macroEntries = logs.map(({ food_logs: log, food_items: item }) => {
+    const qty = Number(log.quantity) / 100;
+    return {
+      name: item.name,
+      protein: Math.round((Number(item.protein) || 0) * qty),
+      carbs: Math.round((Number(item.carbs) || 0) * qty),
+      fat: Math.round((Number(item.fat) || 0) * qty),
+    };
+  });
+
   return {
     totals: {
       calories: Math.round(totals.calories),
@@ -132,6 +143,7 @@ async function getPageData(userId: string, date: string) {
     },
     meals,
     recentFoods,
+    macroEntries,
   };
 }
 
@@ -158,10 +170,8 @@ export default async function Home({
     dateParam <= tomorrowUTC;
   const date = isExplicitDate ? dateParam : todayUTC;
 
-  const { totals, targets, meals, recentFoods } = await getPageData(
-    session.user.id,
-    date,
-  );
+  const { totals, targets, meals, recentFoods, macroEntries } =
+    await getPageData(session.user.id, date);
   const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
 
   return (
@@ -206,29 +216,7 @@ export default async function Home({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <MacroCard
-            label="Protein"
-            consumed={totals.protein}
-            target={targets.protein}
-            unit="g"
-            color="bg-blue-500"
-          />
-          <MacroCard
-            label="Carbs"
-            consumed={totals.carbs}
-            target={targets.carbs}
-            unit="g"
-            color="bg-yellow-500"
-          />
-          <MacroCard
-            label="Fat"
-            consumed={totals.fat}
-            target={targets.fat}
-            unit="g"
-            color="bg-orange-500"
-          />
-        </div>
+        <MacroCards totals={totals} targets={targets} entries={macroEntries} />
 
         <NutritionControls recentFoods={recentFoods} date={date} />
 
@@ -243,40 +231,6 @@ export default async function Home({
           mealLabels={MEAL_LABELS}
         />
       </main>
-    </div>
-  );
-}
-
-function MacroCard({
-  label,
-  consumed,
-  target,
-  unit,
-  color,
-}: {
-  label: string;
-  consumed: number;
-  target: number;
-  unit: string;
-  color: string;
-}) {
-  return (
-    <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-4 flex flex-col gap-3">
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className="text-xl font-semibold text-white">
-        {consumed}
-        <span className="text-xs text-zinc-600 font-normal ml-0.5">{unit}</span>
-      </p>
-      <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} rounded-full transition-all`}
-          style={{ width: `${Math.min((consumed / target) * 100, 100)}%` }}
-        />
-      </div>
-      <p className="text-xs text-zinc-600">
-        of {target}
-        {unit}
-      </p>
     </div>
   );
 }
