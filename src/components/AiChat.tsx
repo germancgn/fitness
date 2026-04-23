@@ -182,7 +182,7 @@ export default function AiChat({
             type="button"
             onClick={onSend}
             disabled={!userText.trim() || isSending}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
           >
             <svg
               width="14"
