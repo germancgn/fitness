@@ -51,7 +51,12 @@ export default function MealTemplateSheet({
   const [addTab, setAddTab] = useState<AddTab>("search");
   const [mealType, setMealType] = useState<
     "breakfast" | "lunch" | "dinner" | "snack"
-  >("lunch");
+  >(() => {
+    const hours = new Date().getHours();
+    if (hours < 12) return "breakfast";
+    if (hours < 17) return "lunch";
+    return "dinner";
+  });
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);

@@ -86,6 +86,7 @@ export async function POST(req: Request) {
 
   const userContext = profile
     ? `Goal: ${goalLabels[profile.goalType ?? "maintain"] ?? profile.goalType}
+Age: ${profile.age ?? "unknown"}, Gender: ${profile.gender ?? "unknown"}, Height: ${profile.height ? `${profile.height}cm` : "unknown"}, Weight: ${profile.weight ? `${profile.weight}kg` : "unknown"}, Activity: ${profile.activityLevel ?? "unknown"}
 Targets: ${profile.calorieTarget} kcal, ${profile.proteinTarget}g protein, ${profile.carbsTarget}g carbs, ${profile.fatTarget}g fat`
     : "No profile set — use general healthy eating guidelines.";
 

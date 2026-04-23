@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import AiChat from "@/components/AiChat";
 import { readStream } from "@/utils/readStream";
-import { useState } from "react";
 
 export default function NutritionAnalysis({ date }: { date: string }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");

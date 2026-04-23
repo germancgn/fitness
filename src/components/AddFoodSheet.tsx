@@ -31,7 +31,12 @@ export default function AddFoodSheet({
   const [grams, setGrams] = useState("100");
   const [mealType, setMealType] = useState<
     "breakfast" | "lunch" | "dinner" | "snack"
-  >("lunch");
+  >(() => {
+    const hours = new Date().getHours();
+    if (hours < 12) return "breakfast";
+    if (hours < 17) return "lunch";
+    return "dinner";
+  });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { close, panelClass, backdropClass } = useSheet(onClose);
