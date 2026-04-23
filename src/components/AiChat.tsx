@@ -117,9 +117,9 @@ export default function AiChat({
             {chat.map(({ id, content, role }) => (
               <li
                 key={id}
-                className={`text-sm leading-relaxed whitespace-pre-wrap max-w-[85%] rounded-md wrap-break-word ${
+                className={`text-sm leading-relaxed whitespace-pre-wrap rounded-md wrap-break-word ${
                   role === "user"
-                    ? "ml-auto bg-blue-500 text-white px-2 py-1"
+                    ? "ml-auto max-w-[85%] bg-blue-500 text-white px-2 py-1"
                     : "mr-auto text-zinc-300"
                 }`}
               >
