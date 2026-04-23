@@ -1,11 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { anthropic } from "@/lib/anthropic";
 import { db } from "@/db";
 import { foodItems, foodLogs, userProfiles } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
-
-const client = new Anthropic();
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -116,7 +114,7 @@ ${
 
 Keep it friendly, practical, and under 200 words. Use plain text — no markdown headers or bullet symbols, just clean paragraphs.`;
 
-  const stream = client.messages.stream({
+  const stream = anthropic.messages.stream({
     model: "claude-opus-4-7",
     max_tokens: 400,
     messages: [{ role: "user", content: prompt }],

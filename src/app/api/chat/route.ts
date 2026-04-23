@@ -1,8 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
+import { anthropic } from "@/lib/anthropic";
 import { createClient } from "@/utils/supabase/server";
-
-const client = new Anthropic();
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -21,7 +19,7 @@ export async function POST(req: Request) {
 
   console.log(chat);
 
-  const stream = client.messages.stream({
+  const stream = anthropic.messages.stream({
     model: "claude-opus-4-7",
     max_tokens: 400,
     messages: chat,
