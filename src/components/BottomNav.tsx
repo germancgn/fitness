@@ -9,23 +9,50 @@ const NAV = [
     label: "Nutrition",
     icon: (
       <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        width={22}
+        height={22}
+        viewBox="0 0 256 256"
         aria-hidden="true"
       >
-        <path
-          d="M12 2C8 2 4 6 4 10c0 3.5 2 6.5 5 8v2h6v-2c3-1.5 5-4.5 5-8 0-4-4-8-8-8z"
+        <rect width="256" height="256" fill="none" />
+        <line
+          x1="80"
+          y1="40"
+          x2="80"
+          y2="88"
+          fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <line
+          x1="80"
+          y1="128"
+          x2="80"
+          y2="224"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
         />
         <path
-          d="M9 20h6"
+          d="M208,168H152s0-104,56-128V224"
+          fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <path
+          d="M48,40,40,88a40,40,0,0,0,80,0l-8-48"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
         />
       </svg>
     ),
@@ -35,18 +62,85 @@ const NAV = [
     label: "Training",
     icon: (
       <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        width={22}
+        height={22}
+        viewBox="0 0 256 256"
         aria-hidden="true"
       >
-        <path
-          d="M6 12h12M3 9l3 3-3 3M21 9l-3 3 3 3"
+        <rect width="256" height="256" fill="none" />
+        <rect
+          x="56"
+          y="56"
+          width="40"
+          height="144"
+          rx="8"
+          fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <rect
+          x="160"
+          y="56"
+          width="40"
+          height="144"
+          rx="8"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <path
+          d="M200,80h24a8,8,0,0,1,8,8v80a8,8,0,0,1-8,8H200"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <path
+          d="M56,176H32a8,8,0,0,1-8-8V88a8,8,0,0,1,8-8H56"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <line
+          x1="96"
+          y1="128"
+          x2="160"
+          y2="128"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <line
+          x1="232"
+          y1="128"
+          x2="248"
+          y2="128"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
+        />
+        <line
+          x1="8"
+          y1="128"
+          x2="24"
+          y2="128"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
         />
       </svg>
     ),
@@ -56,24 +150,30 @@ const NAV = [
     label: "Profile",
     icon: (
       <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        width={22}
+        height={22}
+        viewBox="0 0 256 256"
         aria-hidden="true"
       >
+        <rect width="512" height="512" fill="none" />
         <circle
-          cx="12"
-          cy="8"
-          r="3.5"
+          cx="128"
+          cy="96"
+          r="64"
+          fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
         />
         <path
-          d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
+          d="M32,216c19.37-33.47,54.55-56,96-56s76.63,22.53,96,56"
+          fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="12"
         />
       </svg>
     ),
