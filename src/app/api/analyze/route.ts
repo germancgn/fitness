@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { anthropic } from "@/lib/anthropic";
 import { db } from "@/db";
 import { foodItems, foodLogs, userProfiles } from "@/db/schema";
+import { anthropic } from "@/lib/anthropic";
 import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: Request) {
@@ -44,6 +44,7 @@ export async function POST(req: Request) {
         protein: foodItems.protein,
         carbs: foodItems.carbs,
         fat: foodItems.fat,
+        sugars: foodItems.sugars,
       })
       .from(foodLogs)
       .innerJoin(foodItems, eq(foodLogs.foodItemId, foodItems.id))
@@ -58,9 +59,10 @@ export async function POST(req: Request) {
         protein: acc.protein + (Number(row.protein) || 0) * qty,
         carbs: acc.carbs + (Number(row.carbs) || 0) * qty,
         fat: acc.fat + (Number(row.fat) || 0) * qty,
+        sugars: acc.sugars + (Number(row.sugars) || 0) * qty,
       };
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, sugars: 0 },
   );
 
   const mealGroups = logs.reduce<Record<string, string[]>>((acc, row) => {
@@ -68,7 +70,13 @@ export async function POST(req: Request) {
     const qty = Number(row.quantity) / 100;
     const kcal = Math.round((Number(row.calories) || 0) * qty);
     if (!acc[type]) acc[type] = [];
-    acc[type].push(`${row.name} (${row.quantity}g, ${kcal} kcal)`);
+    const protein = Math.round((Number(row.protein) || 0) * qty);
+    const carbs = Math.round((Number(row.carbs) || 0) * qty);
+    const fat = Math.round((Number(row.fat) || 0) * qty);
+    const sugars = Math.round((Number(row.sugars) || 0) * qty);
+    acc[type].push(
+      `${row.name} (${row.quantity}g: ${kcal} kcal, ${protein}g protein, ${carbs}g carbs, ${fat}g fat, ${sugars}g sugars)`,
+    );
     return acc;
   }, {});
 
@@ -104,7 +112,13 @@ ${userContext}
 ${mealSummary || "Nothing logged."}
 </What they ate>
 
-Totals: ${Math.round(totals.calories)} kcal | ${Math.round(totals.protein)}g protein | ${Math.round(totals.carbs)}g carbs | ${Math.round(totals.fat)}g fat
+<Totals>
+${Math.round(totals.calories)} kcal
+${Math.round(totals.protein)}g protein
+${Math.round(totals.carbs)}g carbs
+${Math.round(totals.fat)}g fat
+${Math.round(totals.sugars)}g sugars
+</Totals>
 
 ${
   isPastDay
@@ -115,7 +129,7 @@ ${
 Keep it friendly, practical, and under 200 words. Use plain text — no markdown headers or bullet symbols, just clean paragraphs.`;
 
   const stream = anthropic.messages.stream({
-    model: "claude-opus-4-7",
+    model: "claude-opus-4-6",
     max_tokens: 400,
     messages: [{ role: "user", content: prompt }],
     thinking: { type: "disabled" },
