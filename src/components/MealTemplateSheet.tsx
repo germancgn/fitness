@@ -14,6 +14,7 @@ import {
 } from "@/app/actions/meals";
 import FoodScanner from "@/components/FoodScanner";
 import { useSheet } from "@/hooks/useSheet";
+import { BarcodeIcon } from "./icons/BarcodeIcon";
 
 const MEAL_TYPES = [
   { value: "breakfast", label: "Breakfast" },
@@ -355,20 +356,7 @@ export default function MealTemplateSheet({
                   onClick={() => setShowScanner(true)}
                   className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-600 rounded-lg px-3 py-1.5 transition-colors"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 12h10"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <BarcodeIcon size={16} />
                   Scan
                 </button>
               )}

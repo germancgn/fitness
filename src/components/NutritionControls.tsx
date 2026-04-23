@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { FoodItem } from "@/app/actions/food";
 import AddFoodSheet from "@/components/AddFoodSheet";
 import FoodScanner from "@/components/FoodScanner";
 import RecentFoodsSheet from "@/components/RecentFoodsSheet";
-import { useState } from "react";
+import { BarcodeIcon } from "./icons/BarcodeIcon";
 
 type Mode = null | "scan" | "recent";
 
@@ -36,8 +37,9 @@ export default function NutritionControls({
         <button
           type="button"
           onClick={() => setMode("scan")}
-          className="border border-zinc-800 text-white font-medium rounded-lg px-4 py-3 text-sm hover:bg-zinc-950 hover:border-zinc-700 transition-colors"
+          className="flex gap-2 border border-zinc-800 text-white font-medium rounded-lg px-4 py-3 text-sm hover:bg-zinc-950 hover:border-zinc-700 transition-colors"
         >
+          <BarcodeIcon size={20} />
           Scan
         </button>
       </div>

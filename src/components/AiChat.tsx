@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { readStream } from "@/utils/readStream";
+import SparkleIcon from "./icons/SparkleIcon";
 
 type ChatMessage = {
   id: string;
@@ -92,7 +93,7 @@ export default function AiChat({
     <div className="flex flex-col gap-2">
       <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
-          <SparkleIcon />
+          <SparkleIcon size={18} />
           <span className="text-sm font-medium text-white">AI Analysis</span>
           <button
             type="button"
@@ -208,26 +209,5 @@ export default function AiChat({
         </div>
       </div>
     </div>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="text-zinc-400 shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M12 3l1.88 5.63L19 10l-5.12 1.37L12 17l-1.88-5.63L5 10l5.12-1.37z" />
-      <path d="M5 3l.94 2.81L8 7l-2.06.69L5 10l-.94-2.81L2 7l2.06-.69z" />
-      <path d="M19 17l.94 2.81L22 21l-2.06.69L19 24l-.94-2.81L16 21l2.06-.69z" />
-    </svg>
   );
 }

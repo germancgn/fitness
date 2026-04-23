@@ -6,6 +6,7 @@ import type { FoodItem, SearchResult } from "@/app/actions/food";
 import { createCustomFood, lookupFood, searchFood } from "@/app/actions/food";
 import MealsTab from "@/components/MealsTab";
 import { useSheet } from "@/hooks/useSheet";
+import SparkleIcon from "./icons/SparkleIcon";
 
 type Tab = "recent" | "custom" | "meals";
 
