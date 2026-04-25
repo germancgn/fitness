@@ -155,9 +155,9 @@ export default async function Home({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return null;
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
   const todayUTC = new Date().toISOString().split("T")[0];
   const tomorrowUTC = new Date(Date.now() + 86400000)
@@ -171,7 +171,7 @@ export default async function Home({
   const date = isExplicitDate ? dateParam : todayUTC;
 
   const { totals, targets, meals, recentFoods, macroEntries } =
-    await getPageData(session.user.id, date);
+    await getPageData(user.id, date);
   const mealOrder = ["breakfast", "lunch", "dinner", "snack"];
 
   return (

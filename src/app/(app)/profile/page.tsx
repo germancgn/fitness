@@ -93,12 +93,12 @@ export default async function Profile() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return null;
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (!authUser) return null;
 
   const user = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.userId, session.user.id),
+    where: eq(userProfiles.userId, authUser.id),
   });
 
   if (!user) {
