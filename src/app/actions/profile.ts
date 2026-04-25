@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { userProfiles } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 const ACTIVITY_MULTIPLIERS = {
@@ -85,5 +86,6 @@ export async function saveProfile(formData: FormData) {
       },
     });
 
+  revalidatePath("/", "layout");
   redirect("/");
 }
