@@ -53,19 +53,37 @@ export async function saveProfile(formData: FormData) {
     (calorieTarget - proteinTarget * 4 - fatTarget * 9) / 4,
   );
 
-  await db.insert(userProfiles).values({
-    userId: user.id,
-    gender,
-    age,
-    height: String(height),
-    weight: String(weight),
-    goalType,
-    activityLevel,
-    calorieTarget,
-    proteinTarget,
-    fatTarget,
-    carbsTarget,
-  });
+  await db
+    .insert(userProfiles)
+    .values({
+      userId: user.id,
+      gender,
+      age,
+      height: String(height),
+      weight: String(weight),
+      goalType,
+      activityLevel,
+      calorieTarget,
+      proteinTarget,
+      fatTarget,
+      carbsTarget,
+    })
+    .onConflictDoUpdate({
+      target: userProfiles.userId,
+      set: {
+        gender,
+        age,
+        height: String(height),
+        weight: String(weight),
+        goalType,
+        activityLevel,
+        calorieTarget,
+        proteinTarget,
+        fatTarget,
+        carbsTarget,
+        updatedAt: new Date(),
+      },
+    });
 
   redirect("/");
 }
