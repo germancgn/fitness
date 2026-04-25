@@ -30,18 +30,28 @@ export default function NutritionAnalysis({ date }: { date: string }) {
   const chatRef = useRef<HTMLUListElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const stopScrollRef = useRef(false);
+  // Tracks which date the current chat state belongs to
+  const chatDateRef = useRef(date);
+
   // Reload chat from localStorage when date changes
   useEffect(() => {
+    chatDateRef.current = date;
     setChat(loadChat(date));
   }, [date]);
 
-  // Persist chat to localStorage whenever it changes
+  // Persist chat to localStorage whenever it changes.
+  // Uses chatDateRef instead of date in deps to avoid saving the previous
+  // day's chat under the new date when both change in the same render cycle.
+  // biome-ignore lint/correctness/useExhaustiveDependencies(chatDateRef): ref is intentionally excluded
   useEffect(() => {
     if (chat.length === 0) return;
     try {
-      localStorage.setItem(STORAGE_KEY(date), JSON.stringify(chat));
+      localStorage.setItem(
+        STORAGE_KEY(chatDateRef.current),
+        JSON.stringify(chat),
+      );
     } catch {}
-  }, [chat, date]);
+  }, [chat]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies(chat): ignore chat dependency
   useEffect(() => {
@@ -57,6 +67,7 @@ export default function NutritionAnalysis({ date }: { date: string }) {
   async function analyze() {
     if (isAnalyzing || isSending) return;
     setIsAnalyzing(true);
+    setMinimized(false);
     setError("");
 
     const assistantId = crypto.randomUUID();
@@ -117,6 +128,7 @@ export default function NutritionAnalysis({ date }: { date: string }) {
     setChat(nextChat);
     setIsSending(true);
     setError("");
+    setMinimized(false);
     stopScrollRef.current = false;
 
     const res = await fetch("/api/chat", {
@@ -152,24 +164,42 @@ export default function NutritionAnalysis({ date }: { date: string }) {
   }
 
   const isLoading = isAnalyzing || isSending;
+  const [minimized, setMinimized] = useState(false);
 
   return (
     <div className="flex flex-col gap-2">
-      <button
-        type="button"
-        onClick={analyze}
-        disabled={isLoading}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-zinc-800 bg-zinc-950 text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        <SparkleIcon size={16} />
-        Analyze today's nutrition
-      </button>
-
       {chat.length > 0 && (
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
             <SparkleIcon size={18} />
             <span className="text-sm font-medium text-white">AI Coach</span>
+            {!isLoading && (
+              <div className="ml-auto flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMinimized((v) => !v)}
+                  className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                  aria-label={minimized ? "Expand" : "Minimize"}
+                >
+                  <svg
+                    aria-hidden="true"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    {minimized ? (
+                      <path d="M2 5l5 4 5-4" />
+                    ) : (
+                      <path d="M2 9l5-4 5 4" />
+                    )}
+                  </svg>
+                </button>
+              </div>
+            )}
             {isLoading && (
               <span className="ml-auto flex gap-1 items-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
@@ -184,35 +214,39 @@ export default function NutritionAnalysis({ date }: { date: string }) {
               </span>
             )}
           </div>
-          <div className="px-4 py-3">
-            <ul
-              ref={chatRef}
-              className="flex flex-col gap-3 max-h-96 overflow-y-scroll"
-              onScroll={(e) => {
-                const el = e.currentTarget;
-                stopScrollRef.current =
-                  el.scrollHeight - el.scrollTop - el.clientHeight > 50;
-              }}
-            >
-              {chat.map(({ id, content, role }) => (
-                <li
-                  key={id}
-                  className={`text-sm leading-relaxed whitespace-pre-wrap max-w-[85%] rounded-md ${
-                    role === "user"
-                      ? "ml-auto bg-blue-500 text-white px-2 py-1"
-                      : "mr-auto text-zinc-300"
-                  }`}
-                >
-                  {content}
-                  {isLoading &&
-                    role === "assistant" &&
-                    id === chat[chat.length - 1].id &&
-                    content === "" && (
-                      <span className="inline-block w-0.5 h-4 bg-zinc-500 ml-0.5 animate-pulse align-text-bottom" />
-                    )}
-                </li>
-              ))}
-            </ul>
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${minimized ? "max-h-0" : "max-h-125"}`}
+          >
+            <div className="px-4 py-3">
+              <ul
+                ref={chatRef}
+                className="flex flex-col gap-3 max-h-96 overflow-y-scroll"
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  stopScrollRef.current =
+                    el.scrollHeight - el.scrollTop - el.clientHeight > 50;
+                }}
+              >
+                {chat.map(({ id, content, role }) => (
+                  <li
+                    key={id}
+                    className={`text-sm leading-relaxed whitespace-pre-wrap max-w-[85%] rounded-md px-2 py-1 ${
+                      role === "user"
+                        ? "ml-auto bg-blue-500 text-zinc-100"
+                        : "mr-auto bg-zinc-900 text-zinc-300"
+                    }`}
+                  >
+                    {content}
+                    {isLoading &&
+                      role === "assistant" &&
+                      id === chat[chat.length - 1].id &&
+                      content === "" && (
+                        <span className="inline-block w-0.5 h-4 bg-zinc-500 ml-0.5 animate-pulse align-text-bottom" />
+                      )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       )}
@@ -247,6 +281,17 @@ export default function NutritionAnalysis({ date }: { date: string }) {
             >
               {512 - userText.length}
             </span>
+          )}
+          {!userText && (
+            <button
+              type="button"
+              onClick={analyze}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs text-zinc-300 shrink-0"
+            >
+              <SparkleIcon size={12} />
+              Analyze
+            </button>
           )}
           <button
             type="button"
