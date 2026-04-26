@@ -25,7 +25,7 @@ export default async function AppLayout({
   if (!profile) redirect("/onboarding");
 
   return (
-    <div className="pb-16">
+    <div className="pt-[env(safe-area-inset-top)] pb-16">
       {children}
       <BottomNav />
     </div>
