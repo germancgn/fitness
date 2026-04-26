@@ -176,7 +176,7 @@ export default async function Home({
 
   return (
     <div className="flex flex-col bg-black font-sans min-h-screen">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900 pt-[calc(env(safe-area-inset-top)+1rem)]">
         <span className="text-white font-semibold">FitnessLabs</span>
         <form action={signOut}>
           <button
