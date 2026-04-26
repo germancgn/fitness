@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FitnessLabs",
   description: "AI-powered nutrition and training tracker",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "FitnessLabs",
+  },
 };
 
 export const viewport = {
@@ -22,6 +27,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
