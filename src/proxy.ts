@@ -13,6 +13,7 @@ const publicPaths = [
   "/auth-code-error",
   "/auth",
   "/onboarding",
+  "/manifest.webmanifest",
 ];
 
 export async function proxy(request: NextRequest) {

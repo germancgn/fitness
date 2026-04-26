@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "FitnessLabs",
+    startupImage: "/apple-touch-icon.png",
   },
 };
 
